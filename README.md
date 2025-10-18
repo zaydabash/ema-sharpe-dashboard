@@ -1,26 +1,42 @@
-# EMA + Sharpe Dashboard
+# Multi-Strategy Quantitative Trading Dashboard
 
-A production-ready EMA crossover backtesting dashboard deployed on Google Cloud Run. This single-container application demonstrates modern cloud deployment practices and quantitative finance fundamentals.
+A production-ready quantitative trading dashboard featuring multiple strategies (EMA Crossover, RSI Mean Reversion, SMA Crossover, Bollinger Breakout, Momentum) with comprehensive analytics including Sharpe ratio analysis, drawdown metrics, Monte Carlo simulation, and live market data integration.
 
-## Architecture
+![Dashboard Screenshot](screenshot.png)
 
-- **Backend**: FastAPI with Jinja2 templates
-- **Frontend**: Server-side rendered HTML with Plotly.js
-- **Deployment**: Google Cloud Run (containerized)
-- **Data**: yfinance for historical market data
-- **Visualization**: Plotly for interactive charts
+**Live Demo:** https://ema-sharpe-380303857049.us-west1.run.app/
 
 ## Features
 
-- **EMA Crossover Strategy**: Fast/slow EMA signals with realistic trade execution
-- **Volatility Targeting**: Optional daily exposure scaling to target volatility
-- **Realistic Trading Costs**: Configurable fees and slippage
+### Multiple Trading Strategies
+- **EMA Crossover**: Fast/slow EMA signals with realistic trade execution
+- **RSI Mean Reversion**: Oversold/overbought signals with configurable thresholds
+- **SMA Crossover**: Simple moving average crossover strategy
+- **Bollinger Breakout**: Volatility-based breakout signals
+- **Momentum**: Trend-following momentum strategy
+
+### Advanced Analytics
 - **Performance Metrics**: CAGR, Sharpe ratio, Max Drawdown, Win Rate
-- **Interactive Charts**: Real-time equity curve visualization with buy-and-hold comparison
-- **Rate Limiting**: API protection against abuse (60 req/min per IP)
-- **CSV Export**: Download equity curve data
+- **Monte Carlo Simulation**: Bootstrap analysis for risk assessment
+- **Rolling Metrics**: Time-series analysis of Sharpe, CAGR, and drawdown
+- **Benchmark Comparison**: Strategy vs buy-and-hold performance
+- **Trade Analysis**: Per-trade PnL with entry/exit details
+
+### Interactive Visualizations
+- **Equity Curves**: Real-time strategy performance with benchmark overlay
+- **Drawdown Analysis**: Maximum drawdown visualization
+- **Exposure Charts**: Daily leverage and volatility targeting
+- **Signal Tape**: Buy/sell signals with PnL tooltips
+- **Sharpe Heatmap**: Parameter sweep analysis
+- **Monthly Returns**: Strategy vs buy-and-hold comparison tables
+
+### Production Features
+- **Live Data Integration**: Real-time market data via yfinance
+- **Rate Limiting**: API protection (60 req/min per IP)
+- **CSV Export**: Download equity curves and trade data
 - **Permalinks**: Shareable URLs with encoded parameters
-- **Health Monitoring**: `/health` endpoint for uptime monitoring
+- **Strategy Leaderboard**: Track top-performing configurations
+- **Live Tracking**: Subscribe to strategy performance updates
 
 ## Quick Start
 
