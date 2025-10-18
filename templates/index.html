@@ -1,0 +1,536 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>EMA Sharpe — Quant Dashboard</title>
+
+  <!-- Fonts & Theme -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/theme.css?v=1004">
+
+  <!-- Plotly -->
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+  <main id="app-root">
+<div class="wrap grid">
+  <h1>Multi-Strategy Quant Dashboard</h1>
+  <div id="params-pill" class="params-pill badge">params: (click to copy permalink)</div>
+
+  <!-- Controls -->
+  <div class="glass panel grid">
+    <div class="row">
+      <div><label>Ticker<input id="ticker" value="SPY"></label></div>
+      <div><label>Start<input id="start" value="2018-01-01"></label></div>
+      <div><label>End<input id="end" value=""></label></div>
+      <div><label>Strategy<select id="strategy"><option value="ema_crossover">EMA Crossover</option><option value="rsi_mean_reversion">RSI Mean Reversion</option><option value="sma_crossover">SMA Crossover</option><option value="bollinger_breakout">Bollinger Breakout</option><option value="momentum">Momentum</option></select></label></div>
+      <div><label>Target Vol<input id="target_vol" type="number" step="0.01" value="0.15"></label></div>
+    </div>
+    
+    <!-- Strategy-specific parameters -->
+    <div id="strategy_params" class="row">
+      <!-- EMA Crossover params -->
+      <div id="ema_params" class="strategy-param-group">
+        <div><label>Fast EMA<input id="ema_fast" type="number" value="20"></label></div>
+        <div><label>Slow EMA<input id="ema_slow" type="number" value="100"></label></div>
+      </div>
+      
+      <!-- RSI params -->
+      <div id="rsi_params" class="strategy-param-group" style="display:none">
+        <div><label>RSI Period<input id="rsi_period" type="number" value="14"></label></div>
+        <div><label>Oversold<input id="oversold" type="number" value="30"></label></div>
+        <div><label>Overbought<input id="overbought" type="number" value="70"></label></div>
+      </div>
+      
+      <!-- SMA params -->
+      <div id="sma_params" class="strategy-param-group" style="display:none">
+        <div><label>Fast SMA<input id="sma_fast" type="number" value="20"></label></div>
+        <div><label>Slow SMA<input id="sma_slow" type="number" value="50"></label></div>
+      </div>
+      
+      <!-- Bollinger Bands params -->
+      <div id="bb_params" class="strategy-param-group" style="display:none">
+        <div><label>BB Window<input id="bb_window" type="number" value="20"></label></div>
+        <div><label>BB Std<input id="bb_std" type="number" step="0.1" value="2.0"></label></div>
+      </div>
+      
+      <!-- Momentum params -->
+      <div id="momentum_params" class="strategy-param-group" style="display:none">
+        <div><label>Lookback<input id="lookback" type="number" value="20"></label></div>
+        <div><label>Threshold<input id="threshold" type="number" step="0.001" value="0.02"></label></div>
+      </div>
+    </div>
+    <div class="row">
+      <div><label>Fees (bps)<input id="fees_bps" type="number" value="1"></label></div>
+      <div><label>Slippage (bps)<input id="slip_bps" type="number" value="2"></label></div>
+      <div><label>Vol Target?<select id="vol_target"><option value="true" selected>On</option><option value="false">Off</option></select></label></div>
+      <div><label>Compare (csv)<input id="compare_list" placeholder="QQQ,IWM"></label></div>
+      <div><label>Auto Refresh (s)<input id="auto_secs" type="number" value="0" placeholder="0=off"></label></div>
+      <div style="display:flex;gap:10px;align-items:end">
+        <button id="run" class="btn-primary">Run Backtest</button>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button id="export" class="btn-ghost">Export Equity</button>
+      <button id="export_trades" class="btn-ghost">Export Trades</button>
+      <button id="link" class="btn-ghost">Copy Permalink</button>
+      <div id="status" class="legend"></div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="cards">
+    <div class="card"><div class="k">CAGR</div><div class="v" id="k_cagr">–</div></div>
+    <div class="card"><div class="k">Sharpe</div><div class="v" id="k_sharpe">–</div></div>
+    <div class="card"><div class="k">Max Drawdown</div><div class="v" id="k_mdd">–</div></div>
+    <div class="card"><div class="k">Trades</div><div class="v" id="k_trades">–</div></div>
+  </div>
+
+  <!-- Main equity & overlays -->
+  <div class="glass panel"><div class="plot-wrap"><div id="chart_equity" class="chart"></div></div></div>
+  <div class="glass panel"><div class="plot-wrap"><div id="chart_dd" class="subchart"></div></div></div>
+  <div class="glass panel grid">
+    <div class="legend">Signal Tape (Long = teal, Flat = dark)</div>
+    <div class="tape"><div id="signal_tape" style="display:flex;width:100%"></div></div>
+    <div class="plot-wrap"><div id="chart_expo" class="subchart"></div></div>
+  </div>
+
+  <!-- Rolling metrics -->
+  <div class="glass panel grid">
+    <div class="legend">Rolling 6-month Sharpe / CAGR / Min Drawdown</div>
+    <div class="plot-wrap"><div id="chart_roll_sharpe" class="subchart"></div></div>
+    <div class="plot-wrap"><div id="chart_roll_cagr" class="subchart"></div></div>
+    <div class="plot-wrap"><div id="chart_roll_dd" class="subchart"></div></div>
+  </div>
+
+  <!-- Heatmap sweep -->
+  <div class="glass panel grid">
+    <div class="legend">Sharpe Heatmap (multi-ticker) — click a cell to apply</div>
+    <div class="row">
+      <div><label>Tickers (csv)<input id="sweep_tickers" value="SPY,QQQ"></label></div>
+      <div><label>Fast list<input id="fast_list" value="5,10,20,30,50"></label></div>
+      <div><label>Slow list<input id="slow_list" value="50,100,150,200,250"></label></div>
+      <div><button id="sweep" class="btn-ghost">Run Sweep</button></div>
+    </div>
+    <div class="plot-wrap"><div id="chart_heat" style="height:380px"></div></div>
+  </div>
+
+  <!-- Monthly returns + Benchmarks + Monte Carlo -->
+  <div class="glass panel grid">
+    <div class="legend">Monthly Returns (strategy)</div>
+    <div class="plot-wrap"><div id="chart_monthly" style="height:360px"></div></div>
+  </div>
+  <div class="glass panel"><div class="legend">Benchmarks (relative)</div><div class="plot-wrap"><div id="chart_bench" class="subchart"></div></div></div>
+  <div class="glass panel"><div class="legend">Monte Carlo (median + 5/95% cone)</div><div class="plot-wrap"><div id="chart_mc" class="chart"></div></div></div>
+
+  <!-- Tables -->
+  <div class="glass panel">
+    <div class="legend">Monthly Returns Tables (Strategy vs Buy & Hold)</div>
+    <div id="tables_wrap" class="two-col"></div>
+  </div>
+
+  <!-- Live Data & Explainability -->
+  <div class="glass panel grid">
+    <div class="legend">Live Data & Explainability</div>
+    <div class="row">
+      <div><button id="get_live_data" class="btn-ghost">Get Live Data</button></div>
+      <div><button id="explain_strategy" class="btn-ghost">Explain Strategy</button></div>
+      <div><button id="add_to_leaderboard" class="btn-ghost">Add to Leaderboard</button></div>
+    </div>
+    <div id="live_data_display" style="display:none; margin-top: 16px; padding: 12px; background: var(--surface); border-radius: 8px;"></div>
+    <div id="explain_display" style="display:none; margin-top: 16px; padding: 12px; background: var(--surface); border-radius: 8px;"></div>
+  </div>
+
+  <!-- Strategy Leaderboard -->
+  <div class="glass panel">
+    <div class="legend">Strategy Leaderboard</div>
+    <div class="row">
+      <div><label>Sort By<select id="leaderboard_sort"><option value="sharpe">Sharpe Ratio</option><option value="cagr">CAGR</option></select></label></div>
+      <div><button id="refresh_leaderboard" class="btn-ghost">Refresh</button></div>
+    </div>
+    <div id="leaderboard_display" style="margin-top: 16px;"></div>
+  </div>
+
+  <!-- Live Tracking Subscription -->
+  <div class="glass panel">
+    <div class="legend">Live Tracking Subscription</div>
+    <div class="row">
+      <div><label>Email<input id="subscription_email" type="email" placeholder="your@email.com"></label></div>
+      <div><button id="subscribe_live" class="btn-primary">Subscribe to Live Tracking</button></div>
+    </div>
+    <div id="subscription_status" style="margin-top: 12px; font-size: 0.9rem; color: var(--text-muted);"></div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <div id="spinner" class="spinner"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+  </main>
+</body>
+
+<script>
+const PLOTLY_DARK = {
+  paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+  font:{color:'#E6EEF8', family:'Inter, system-ui, sans-serif'},
+  xaxis:{gridcolor:'#1b2638'}, yaxis:{gridcolor:'#1b2638'}
+};
+
+// Reusable axes presets for time series in tight spaces
+const AX = {
+  x: { type:'date', tickformat:'%Y', dtick:'M12', tickangle:0, automargin:true, ticks:'outside' },
+  xTight: { type:'date', tickformat:'%Y', dtick:'M24', tickangle:0, automargin:true, ticks:'outside' },
+  yPct: (nt=5)=>({ tickformat:'.0%', nticks:nt, automargin:true, ticks:'outside' }),
+  yNum: (nt=5)=>({ tickformat:'.2f', nticks:nt, automargin:true, ticks:'outside' })
+};
+
+const palette=['#46c2ff','#10b981','#a98bff','#f59e0b','#22d3ee','#f472b6','#34d399'];
+const accent=palette[0], accent2=palette[1], danger='#ff6b6b';
+function todayISO(){return new Date().toISOString().slice(0,10)}
+document.getElementById('end').value=todayISO();
+function val(id){return document.getElementById(id).value.trim()}
+function setText(id,t){document.getElementById(id).textContent=t}
+function setStatus(t){document.getElementById('status').textContent=t}
+function toast(t){const el=document.getElementById('toast');el.textContent=t;el.style.display='block';setTimeout(()=>el.style.display='none',3200)}
+function spin(on){document.getElementById('spinner').style.display=on?'flex':'none'}
+function fmtPct(v){return (v*100).toFixed(2)+'%'}; function fmt2(v){return Number(v).toFixed(2)}
+
+function getParams(){return{
+  ticker:val('ticker').toUpperCase(), start:val('start')||'2018-01-01', end:val('end')||todayISO(),
+  strategy:val('strategy'),
+  ema_fast:+val('ema_fast'), ema_slow:+val('ema_slow'),
+  rsi_period:+val('rsi_period'), oversold:+val('oversold'), overbought:+val('overbought'),
+  sma_fast:+val('sma_fast'), sma_slow:+val('sma_slow'),
+  bb_window:+val('bb_window'), bb_std:+val('bb_std'),
+  lookback:+val('lookback'), threshold:+val('threshold'),
+  fees_bps:+val('fees_bps'), slip_bps:+val('slip_bps'),
+  vol_target:(val('vol_target')==='true'), target_vol:+val('target_vol')
+}}
+function setParamBadge(p){const keys=['ticker','start','end','ema_fast','ema_slow','fees_bps','slip_bps','vol_target','target_vol']; const small=keys.map(k=>`${k}=${p[k]}`).join(' · '); const el=document.getElementById('params-pill'); el.textContent=small.length>120?small.slice(0,117)+'…':small}
+
+function animateNumber(elId, target, fmt){const el=document.getElementById(elId);const steps=22;let i=0;const delta=(target)/steps;const int=setInterval(()=>{i++;const v=i>=steps?target:(i*delta);el.textContent=fmt(v);if(i>=steps)clearInterval(int)},18)}
+
+function signalTape(exposure){const tape=document.getElementById('signal_tape');tape.innerHTML='';const N=Math.min(600,exposure.length);const step=Math.max(1,Math.floor(exposure.length/N));for(let i=0;i<exposure.length;i+=step){const s=document.createElement('span');s.style.flex='1 0 1px'; s.style.background=exposure[i]>0.0001?'#10b981':'#0b1220'; tape.appendChild(s)}}
+
+function renderMonthlyHeatmap(monthly){
+  const years=Object.keys(monthly).map(x=>+x).sort((a,b)=>a-b);
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const z=years.map(y=>monthly[y].map(v=>v===null?null:v));
+  Plotly.newPlot('chart_monthly',[{z,x:months,y:years,type:'heatmap',
+    colorscale:[[0,'#3b1d1f'],[0.35,'#a33b46'],[0.5,'#2b354a'],[0.65,'#46c2ff'],[1,'#6ee7b7']],zmin:-0.2,zmax:0.2,
+    hovertemplate:'%{y} %{x}: %{z:.2%}<extra></extra>'}],
+    {...PLOTLY_DARK,title:'Monthly Returns (−20%..+20%)'}, {responsive:true,displayModeBar:false});
+}
+
+function renderMonthlyTables(stratGrid,bhGrid,totals){
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const years=Array.from(new Set([...Object.keys(stratGrid).map(Number),...Object.keys(bhGrid).map(Number)])).sort((a,b)=>a-b);
+  function make(grid,tot,title){
+    let h=`<div class="half"><div class="legend" style="margin:6px 0 8px">${title}</div><div class="table-wrap"><table class="table">`;
+    h+=`<thead><tr><th style="width:60px">Year</th>${months.map(m=>`<th style="width:50px">${m}</th>`).join('')}<th style="width:70px">Total</th></tr></thead><tbody>`;
+    years.forEach(y=>{const row=grid[y]||Array(12).fill(null);h+=`<tr><td style="font-weight:600">${y}</td>`;row.forEach(v=>{if(v==null){h+=`<td>—</td>`;return}const c=v>=0?'pos':'neg';h+=`<td class="${c}">${(v*100).toFixed(1)}%</td>`});const yt=(tot?.row?.[y]??0);const c2=yt>=0?'pos':'neg';h+=`<td class="${c2}" style="font-weight:600">${(yt*100).toFixed(1)}%</td></tr>`;});
+    h+=`<tr><td style="font-weight:700">Total</td>`;months.forEach((_,i)=>{const v=tot?.col?.[i]??0;const c=v>=0?'pos':'neg';h+=`<td class="${c}" style="font-weight:600">${(v*100).toFixed(1)}%</td>`});const g=tot?.grand??0;const cg=g>=0?'pos':'neg';h+=`<td class="${cg}" style="font-weight:800">${(g*100).toFixed(1)}%</td></tr>`;
+    h+=`</tbody></table></div></div>`;return h
+  }
+  const stratHTML=make(stratGrid, totals?.strategy, 'Strategy');
+  const bhHTML=make(bhGrid, totals?.buyhold, 'Buy & Hold');
+  document.getElementById('tables_wrap').innerHTML = `<div class="two-col">${stratHTML}${bhHTML}</div>`;
+}
+
+async function run(){
+  const p=getParams(); setParamBadge(p); spin(true); setStatus('Running…'); document.getElementById('run').disabled=true;
+  try{
+    const r=await fetch("/api/backtest",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
+    if(!r.ok) throw new Error(await r.text()); const data=await r.json();
+
+    animateNumber('k_cagr',data.metrics.CAGR,v=>fmtPct(v));
+    animateNumber('k_sharpe',data.metrics.Sharpe,v=>fmt2(v));
+    animateNumber('k_mdd',data.metrics.MaxDrawdown,v=>fmtPct(v));
+    animateNumber('k_trades',data.metrics.Trades,v=>Math.round(v).toString());
+
+    const x=data.equity_curve.map(p=>p.date), strat=data.equity_curve.map(p=>p.equity);
+    const traces=[{x,y:strat,name:`${p.ticker} Strategy`,mode:'lines',line:{width:3,color:accent}}];
+
+    // Benchmarks overlay (relative)
+    const cmp=val('compare_list').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
+    if(cmp.length){
+      try {
+        const br=await fetch('/api/benchmarks',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tickers:cmp,start:p.start,end:p.end})});
+        if(br.ok){
+          const bj=await br.json();
+          console.log('Benchmarks response:', bj);
+          if(bj.benchmarks && Object.keys(bj.benchmarks).length > 0){
+            let i=0;
+            for(const t of Object.keys(bj.benchmarks)){
+              const s=bj.benchmarks[t];
+              if(s && s.length > 0){
+                traces.push({x:s.map(a=>a.date),y:s.map(a=>a.equity),name:`${t} Buy&Hold`,mode:'lines',line:{width:1.6,color:palette[(i++)%palette.length],dash:'dot'}});
+              }
+            }
+          } else {
+            console.log('No benchmark data received');
+          }
+        } else {
+          console.log('Benchmarks request failed:', br.status, await br.text());
+        }
+      } catch(e) {
+        console.log('Benchmarks error:', e);
+      }
+    }
+
+    // Benchmarks chart (separate panel)
+    const benchDiv = document.getElementById('chart_bench');
+    if (cmp.length) {
+      const br = await fetch('/api/benchmarks', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({tickers:cmp, start:p.start, end:p.end})
+      });
+      if (br.ok) {
+        const bj = await br.json();
+        const tracesB = [];
+        let i = 0;
+        for (const [t, series] of Object.entries(bj.benchmarks || {})) {
+          if (!series || !series.length) continue;
+          tracesB.push({
+            x: series.map(a=>a.date),
+            y: series.map(a=>a.equity),
+            name: `${t} Buy&Hold`,
+            mode:'lines',
+            line:{width:1.8, color:palette[(i++)%palette.length], dash:'dot'}
+          });
+        }
+        if (tracesB.length) {
+          Plotly.newPlot(benchDiv, tracesB,
+            {...PLOTLY_DARK, title:'Benchmarks (relative, start=1.0)', xaxis:AX.x, yaxis:{...AX.yNum(5)}, hovermode:'x unified'},
+            {responsive:true, displayModeBar:false}
+          );
+        } else {
+          benchDiv.innerHTML = '<div class="legend">No benchmark data for that range.</div>';
+        }
+      } else {
+        benchDiv.innerHTML = '<div class="legend">Benchmark request failed.</div>';
+      }
+    } else {
+      benchDiv.innerHTML = '<div class="legend">Add tickers in "Compare (csv)" to view benchmarks.</div>';
+    }
+
+    // Force charts to render within container width to avoid page shift
+    const plotCfg = {responsive:true, displayModeBar:false};
+    Plotly.newPlot('chart_equity', traces, {...PLOTLY_DARK, title:'Equity (strategy + benchmarks)', xaxis:AX.x, yaxis:{...AX.yNum(5), title:'Equity (start=1.0)'}, autosize:true}, plotCfg).then(() => Plotly.Plots.resize(document.getElementById('chart_equity')));
+
+    // Drawdown (floor to nearest -5%)
+    const dd = data.drawdown || [];
+    const ddMin = dd.length ? Math.min(...dd) : 0;
+    const ddFloor = Math.min(-0.05, Math.floor(ddMin*20)/20); // steps of 5%
+    Plotly.newPlot('chart_dd',
+      [{x, y:dd, mode:'lines', name:'Drawdown', fill:'tozeroy', line:{width:2, color:danger}}],
+      {...PLOTLY_DARK, title:'Drawdown', xaxis:AX.x, yaxis:{...AX.yPct(5), range:[ddFloor,0]}, hovermode:'x unified', autosize:true},
+      plotCfg
+    ).then(() => Plotly.Plots.resize(document.getElementById('chart_dd')));
+
+    // Exposure (show 0..max*1.1 with 2-dec ticks)
+    const ex = data.exposure || [];
+    const exMax = ex.length ? Math.max(...ex) : 1;
+    Plotly.newPlot('chart_expo',
+      [{x, y:ex, mode:'lines', name:'Exposure', line:{width:2, color:'#a98bff'}, hovertemplate:'%{y:.2f}x<extra></extra>'}],
+      {...PLOTLY_DARK, title:'Daily Exposure / Leverage', xaxis:AX.x, yaxis:{...AX.yNum(4), title:'x', range:[0, Math.max(1, exMax)*1.1]}, hovermode:'x unified', autosize:true},
+      plotCfg
+    ).then(() => Plotly.Plots.resize(document.getElementById('chart_expo')));
+
+    signalTape(data.exposure||[]);
+    renderMonthlyHeatmap(data.monthly_returns||{});
+    renderMonthlyTables(data.monthly_returns||{}, data.monthly_returns_bh||{}, data.monthly_totals||{});
+
+    // Rolling metrics
+    const rr=await fetch('/api/rolling',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticker:p.ticker,start:p.start,end:p.end,window_days:126})});
+    if(rr.ok){const ro=await rr.json(); const rx=ro.sharpe.map(a=>a.date);
+      Plotly.newPlot('chart_roll_sharpe',
+        [{x:rx, y:ro.sharpe.map(a=>a.v), mode:'lines', line:{width:2, color:accent}}],
+        {...PLOTLY_DARK, title:'Rolling Sharpe (6m)', xaxis:AX.xTight, yaxis:AX.yNum(4), hovermode:'x unified'},
+        {responsive:true, displayModeBar:false}
+      );
+      Plotly.newPlot('chart_roll_cagr',
+        [{x:rx, y:ro.cagr.map(a=>a.v), mode:'lines', line:{width:2, color:accent2}}],
+        {...PLOTLY_DARK, title:'Rolling CAGR (6m annualized)', xaxis:AX.xTight, yaxis:AX.yPct(4), hovermode:'x unified'},
+        {responsive:true, displayModeBar:false}
+      );
+      Plotly.newPlot('chart_roll_dd',
+        [{x:rx, y:ro.min_drawdown.map(a=>a.v), mode:'lines', line:{width:2, color:danger}, fill:'tozeroy'}],
+        {...PLOTLY_DARK, title:'Rolling Min Drawdown (6m)', xaxis:AX.xTight, yaxis:AX.yPct(4), hovermode:'x unified'},
+        {responsive:true, displayModeBar:false}
+      );
+    }
+
+    // Monte Carlo cone
+    const mc=await fetch('/api/monte-carlo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticker:p.ticker,start:p.start,end:p.end,trials:200,horizon_days:252})});
+    if(mc.ok){const m=await mc.json(); const h=[...Array(m.p50.length).keys()]; Plotly.newPlot('chart_mc',[
+      {x:h,y:m.p05,mode:'lines',line:{width:0},showlegend:false,hoverinfo:'skip'},
+      {x:h,y:m.p95,mode:'lines',fill:'tonexty',fillcolor:'rgba(70,194,255,.12)',line:{width:0},showlegend:false,hoverinfo:'skip'},
+      {x:h,y:m.p50,mode:'lines',name:'Median',line:{width:2,color:accent}}
+    ], {...PLOTLY_DARK,title:'Monte Carlo (next 1y, bootstrapped)'},{responsive:true,displayModeBar:false});}
+
+    setStatus('Done.');
+  }catch(e){
+    let msg=(e&&e.message)?e.message:String(e); try{const j=JSON.parse(msg); if(j?.detail) msg=(typeof j.detail==='string')?j.detail:JSON.stringify(j.detail)}catch(_){}
+    setStatus(''); toast('❌ '+msg);
+  }finally{
+    spin(false); document.getElementById('run').disabled=false;
+    // Clamp plots after updates
+    clampPlots();
+    // Resize Plotly after zoom/scale
+    if (window.Plotly) window.Plotly.Plots.resize(document.body);
+  }
+}
+
+async function runSweep(){
+  setStatus('Sweep…'); const base=getParams();
+  const tickers=val('sweep_tickers').split(',').map(s=>s.trim().toUpperCase()).filter(Boolean);
+  const fast_list=val('fast_list').split(',').map(x=>+x.trim()).filter(Boolean);
+  const slow_list=val('slow_list').split(',').map(x=>+x.trim()).filter(Boolean);
+  const r=await fetch('/api/parameter-sweep',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...base,tickers,fast_list,slow_list})});
+  if(!r.ok){setStatus('Sweep error');return}
+  const s=await r.json();
+  // Show only the first grid initially; add ticker selector if multiple
+  const g=s.grids[0]; const data=[{z:g.sharpe,x:g.slow,y:g.fast,type:'heatmap',
+    colorscale:[[0,'#2b354a'],[0.5,'#46c2ff'],[1,'#6ee7b7']],showscale:true,
+    hovertemplate:'Fast %{y}, Slow %{x}<br>Sharpe %{z:.2f}<extra></extra>'}];
+  Plotly.newPlot('chart_heat',data,{...PLOTLY_DARK,title:`Sharpe Heatmap — ${g.ticker}`,xaxis:{tickmode:'array',tickvals:g.slow, title:'Slow'},yaxis:{tickmode:'array',tickvals:g.fast, title:'Fast'}},{responsive:true,displayModeBar:false});
+  document.getElementById('chart_heat').on('plotly_click',ev=>{const pt=ev.points?.[0];if(!pt)return; document.getElementById('ema_fast').value=pt.y;document.getElementById('ema_slow').value=pt.x; run();});
+  setStatus('Sweep done.');
+}
+
+async function exportCSV(){ const p=getParams(); const r=await fetch("/api/export.csv",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)}); const t=await r.text(); const blob=new Blob([t],{type:"text/csv"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='equity_curve.csv'; a.click(); toast('⬇️ Equity CSV downloaded')}
+async function exportTradesCSV(){ const p=getParams(); const r=await fetch("/api/trades.csv",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)}); const t=await r.text(); const blob=new Blob([t],{type:"text/csv"}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='trades.csv'; a.click(); toast('⬇️ Trades CSV downloaded')}
+function copyPermalink(){const s=btoa(unescape(encodeURIComponent(JSON.stringify(getParams())))).replace(/=+$/,''); const url=`${location.origin}/?q=${s}`; navigator.clipboard.writeText(url); toast('🔗 Permalink copied')}
+function autoLoop(){const secs=+val('auto_secs')||0; if(window.__timer){clearInterval(window.__timer);window.__timer=null} if(secs>0){window.__timer=setInterval(run,secs*1000)}}
+
+// Strategy parameter visibility
+function updateStrategyParams(){
+  const strategy=val('strategy');
+  document.querySelectorAll('.strategy-param-group').forEach(g=>g.style.display='none');
+  document.getElementById(strategy+'_params').style.display='flex';
+}
+
+// Live data functions
+async function getLiveData(){
+  const ticker=val('ticker').toUpperCase();
+  try{
+    const r=await fetch('/api/live-data',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ticker})});
+    if(!r.ok) throw new Error(`HTTP ${r.status}: ${await r.text()}`);
+    const data=await r.json();
+    
+    if(data.error) {
+      document.getElementById('live_data_display').innerHTML=`<div style="color: var(--danger);">❌ ${data.error}</div>`;
+      document.getElementById('live_data_display').style.display='block';
+      return;
+    }
+    
+    const html=`<div><strong>${data.ticker}</strong> - Last Close: $${data.last_close?.toFixed(2)||'N/A'} | Current: $${data.current_price?.toFixed(2)||'N/A'}<br>
+    Market Cap: $${(data.market_cap/1e9).toFixed(1)}B | Volume: ${(data.volume/1e6).toFixed(1)}M | PE: ${data.pe_ratio?.toFixed(1)||'N/A'}</div>`;
+    document.getElementById('live_data_display').innerHTML=html;
+    document.getElementById('live_data_display').style.display='block';
+  }catch(e){
+    document.getElementById('live_data_display').innerHTML=`<div style="color: var(--danger);">❌ Live data error: ${e.message}</div>`;
+    document.getElementById('live_data_display').style.display='block';
+  }
+}
+
+// Explainability functions
+async function explainStrategy(){
+  const p=getParams();
+  try{
+    const r=await fetch('/api/explain-detailed',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+    if(!r.ok) throw new Error(await r.text());
+    const data=await r.json();
+    const html=`<div><strong>${data.strategy_info.strategy}</strong><br>
+    ${data.strategy_info.description}<br><br>
+    <strong>Regime Analysis:</strong><br>
+    Bull Market Sharpe: ${data.regime_analysis.bull_market_sharpe.toFixed(2)}<br>
+    Bear Market Sharpe: ${data.regime_analysis.bear_market_sharpe.toFixed(2)}<br><br>
+    <strong>Key Insights:</strong><br>
+    ${data.key_insights.map(i=>'• '+i).join('<br>')}</div>`;
+    document.getElementById('explain_display').innerHTML=html;
+    document.getElementById('explain_display').style.display='block';
+  }catch(e){toast('❌ Explain error: '+e.message)}
+}
+
+// Leaderboard functions
+async function refreshLeaderboard(){
+  const sortBy=val('leaderboard_sort');
+  try{
+    const r=await fetch(`/api/leaderboard?sort_by=${sortBy}&limit=10`);
+    if(!r.ok) throw new Error(await r.text());
+    const data=await r.json();
+    if(data.leaderboard.length===0){
+      document.getElementById('leaderboard_display').innerHTML='<div style="color:var(--text-muted)">No entries yet. Run a backtest and add to leaderboard!</div>';
+      return;
+    }
+    const html=`<div class="table-wrap"><table class="table"><thead><tr><th>Rank</th><th>Ticker</th><th>Strategy</th><th>Sharpe</th><th>CAGR</th><th>Max DD</th><th>Date</th></tr></thead><tbody>
+    ${data.leaderboard.map((entry,i)=>`<tr><td>${i+1}</td><td>${entry.ticker}</td><td>${entry.strategy}</td><td class="${entry.sharpe>=0?'pos':'neg'}">${entry.sharpe.toFixed(2)}</td><td class="${entry.cagr>=0?'pos':'neg'}">${(entry.cagr*100).toFixed(1)}%</td><td class="neg">${(entry.metrics.MaxDrawdown*100).toFixed(1)}%</td><td>${new Date(entry.created_at).toLocaleDateString()}</td></tr>`).join('')}
+    </tbody></table></div>`;
+    document.getElementById('leaderboard_display').innerHTML=html;
+  }catch(e){toast('❌ Leaderboard error: '+e.message)}
+}
+
+async function addToLeaderboard(){
+  const p=getParams();
+  try{
+    const r=await fetch('/api/add-to-leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+    if(!r.ok) throw new Error(await r.text());
+    toast('✅ Added to leaderboard!');
+    refreshLeaderboard();
+  }catch(e){toast('❌ Add to leaderboard error: '+e.message)}
+}
+
+// Subscription functions
+async function subscribeLive(){
+  const email=val('subscription_email');
+  const p=getParams();
+  if(!email){toast('❌ Please enter email');return}
+  try{
+    const r=await fetch('/api/subscribe',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,ticker:p.ticker,strategy:p.strategy,params:p})});
+    if(!r.ok) throw new Error(await r.text());
+    const data=await r.json();
+    document.getElementById('subscription_status').textContent=`✅ Subscribed! ID: ${data.subscription_id}`;
+    toast('✅ Subscribed to live tracking!');
+  }catch(e){toast('❌ Subscription error: '+e.message)}
+}
+
+// Event listeners
+document.getElementById('run').addEventListener('click',run);
+document.getElementById('sweep').addEventListener('click',runSweep);
+document.getElementById('export').addEventListener('click',exportCSV);
+document.getElementById('export_trades').addEventListener('click',exportTradesCSV);
+document.getElementById('link').addEventListener('click',copyPermalink);
+document.getElementById('auto_secs').addEventListener('change',autoLoop);
+document.getElementById('strategy').addEventListener('change',updateStrategyParams);
+document.getElementById('get_live_data').addEventListener('click',getLiveData);
+document.getElementById('explain_strategy').addEventListener('click',explainStrategy);
+document.getElementById('add_to_leaderboard').addEventListener('click',addToLeaderboard);
+document.getElementById('refresh_leaderboard').addEventListener('click',refreshLeaderboard);
+document.getElementById('subscribe_live').addEventListener('click',subscribeLive);
+window.addEventListener('keydown',(e)=>{if(e.key==='r'||e.key==='R')run(); if(e.key==='c'||e.key==='C')copyPermalink()});
+
+// Initialize
+updateStrategyParams();
+refreshLeaderboard();
+
+// Global Plotly resize listener
+window.addEventListener('resize', () =>
+  document.querySelectorAll('.js-plotly-plot').forEach(Plotly.Plots.resize)
+);
+
+const initial = {{ initial_params | default('{}') | safe }};
+if(initial && Object.keys(initial).length){ for(const [k,v] of Object.entries(initial)){ const el=document.getElementById(k); if(!el)continue; el.value=(typeof v==='boolean')?(v?'true':'false'):v } run() }
+
+// Clamp Plotly charts to prevent overflow
+function clampPlots(){
+  if (window.Plotly){
+    document.querySelectorAll('.js-plotly-plot').forEach(el => {
+      try { window.Plotly.Plots.resize(el); } catch(e){}
+    });
+  }
+}
+window.addEventListener('resize', clampPlots);
+</script>
+</body>
+</html>

@@ -1,0 +1,174 @@
+# EMA + Sharpe Dashboard
+
+A production-ready EMA crossover backtesting dashboard deployed on Google Cloud Run. This single-container application demonstrates modern cloud deployment practices and quantitative finance fundamentals.
+
+## Architecture
+
+- **Backend**: FastAPI with Jinja2 templates
+- **Frontend**: Server-side rendered HTML with Plotly.js
+- **Deployment**: Google Cloud Run (containerized)
+- **Data**: yfinance for historical market data
+- **Visualization**: Plotly for interactive charts
+
+## Features
+
+- **EMA Crossover Strategy**: Fast/slow EMA signals with realistic trade execution
+- **Volatility Targeting**: Optional daily exposure scaling to target volatility
+- **Realistic Trading Costs**: Configurable fees and slippage
+- **Performance Metrics**: CAGR, Sharpe ratio, Max Drawdown, Win Rate
+- **Interactive Charts**: Real-time equity curve visualization with buy-and-hold comparison
+- **Rate Limiting**: API protection against abuse (60 req/min per IP)
+- **CSV Export**: Download equity curve data
+- **Permalinks**: Shareable URLs with encoded parameters
+- **Health Monitoring**: `/health` endpoint for uptime monitoring
+
+## Quick Start
+
+### Local Development
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd ema-sharpe-one
+
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run locally
+uvicorn main:app --reload
+```
+
+Access at: http://127.0.0.1:8000
+
+### Docker
+
+```bash
+# Build the container
+docker build -t ema-sharpe .
+
+# Run the container
+docker run -p 8080:8080 ema-sharpe
+```
+
+## Google Cloud Run Deployment
+
+### Prerequisites
+
+1. Google Cloud Project with billing enabled
+2. Cloud Run API enabled
+3. Cloud Build API enabled
+4. Service account with appropriate permissions
+
+### Manual Deployment
+
+```bash
+# Set your project ID
+export PROJECT_ID=your-project-id
+export REGION=us-central1
+
+# Authenticate and configure
+gcloud auth login
+gcloud config set project "$PROJECT_ID"
+gcloud config set run/region "$REGION"
+
+# Enable required services
+gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+
+# Build and push image
+gcloud builds submit --tag gcr.io/$PROJECT_ID/ema-sharpe
+
+# Deploy to Cloud Run
+gcloud run deploy ema-sharpe \
+  --image gcr.io/$PROJECT_ID/ema-sharpe \
+  --platform managed \
+  --allow-unauthenticated \
+  --port 8080 \
+  --memory 1Gi \
+  --cpu 1 \
+  --max-instances 10
+```
+
+### Custom Domain (Optional)
+
+```bash
+# Set your custom domain
+export CUSTOM_DOMAIN=ema-sharpe.yourname.dev
+
+# Create domain mapping
+gcloud run domain-mappings create \
+  --service=ema-sharpe \
+  --domain="$CUSTOM_DOMAIN"
+```
+
+The command will return DNS records to configure. After DNS propagation, TLS certificate is automatic.
+
+## API Endpoints
+
+- `GET /` - Main dashboard interface
+- `GET /health` - Health check endpoint
+- `POST /api/backtest` - JSON API for backtesting
+- `POST /api/export.csv` - CSV export endpoint
+
+## Performance Characteristics
+
+- **Cold Start**: ~2-3 seconds
+- **Warm Requests**: ~200-500ms
+- **Memory Usage**: ~200-400MB
+- **Auto-scaling**: 0-10 instances based on demand
+- **Rate Limiting**: 60 requests per minute per IP
+
+## Monitoring
+
+### Health Checks
+
+The `/health` endpoint returns:
+```json
+{
+  "ok": true
+}
+```
+
+### Uptime Monitoring
+
+Set up monitoring with:
+- Google Cloud Monitoring
+- UptimeRobot
+- Pingdom
+
+## Resume Bullets
+
+Perfect for your resume:
+
+- Built and deployed a quantitative trading dashboard (FastAPI + Plotly) on Google Cloud Run
+- Containerized with Docker, added volatility targeting and Sharpe ratio metrics
+- Implemented rate limiting, CSV export, and permalink sharing features
+- Designed serverless architecture with auto-scaling and global HTTPS distribution
+
+## Interview Talking Points
+
+"This is a production-grade quantitative finance application that demonstrates several key engineering practices:
+
+1. **Containerization**: Single Docker container with FastAPI backend and Jinja2 frontend
+2. **Cloud Deployment**: Google Cloud Run for serverless, auto-scaling infrastructure
+3. **Production Features**: Rate limiting, CSV export, permalink sharing
+4. **Monitoring**: Health checks and uptime monitoring for production reliability
+5. **Quantitative Finance**: Real EMA crossover strategy with realistic trading costs and volatility targeting
+6. **User Experience**: Buy-and-hold comparison, shareable results, data export
+
+The architecture scales from 0 to 10 instances based on demand, provides global HTTPS access, and costs virtually nothing when not in use - perfect for demonstrating modern cloud-native development practices."
+
+## Technical Stack
+
+- **Backend**: FastAPI, Python 3.11
+- **Frontend**: Jinja2 templates, Plotly.js
+- **Data**: pandas, numpy, yfinance
+- **Deployment**: Docker, Google Cloud Run
+- **Monitoring**: Health checks, rate limiting
+
+## License
+
+MIT License - see LICENSE file for details.
