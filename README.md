@@ -2,7 +2,9 @@
 
 A production-ready quantitative trading dashboard featuring multiple strategies (EMA Crossover, RSI Mean Reversion, SMA Crossover, Bollinger Breakout, Momentum) with comprehensive analytics including Sharpe ratio analysis, drawdown metrics, Monte Carlo simulation, and live market data integration.
 
-![Dashboard Screenshot](screenshot.png)
+![Multi-Strategy Quant Dashboard](screenshot.png)
+
+*Screenshot showing the EMA Crossover strategy backtest results for SPY (2018-2025) with performance metrics, equity curve, and drawdown analysis.*
 
 **Live Demo:** https://ema-sharpe-380303857049.us-west1.run.app/
 
