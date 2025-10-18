@@ -72,15 +72,6 @@ docker build -t ema-sharpe .
 docker run -p 8080:8080 ema-sharpe
 ```
 
-## Google Cloud Run Deployment
-
-### Prerequisites
-
-1. Google Cloud Project with billing enabled
-2. Cloud Run API enabled
-3. Cloud Build API enabled
-4. Service account with appropriate permissions
-
 ### Manual Deployment
 
 ```bash
@@ -156,28 +147,6 @@ Set up monitoring with:
 - Google Cloud Monitoring
 - UptimeRobot
 - Pingdom
-
-## Resume Bullets
-
-Perfect for your resume:
-
-- Built and deployed a quantitative trading dashboard (FastAPI + Plotly) on Google Cloud Run
-- Containerized with Docker, added volatility targeting and Sharpe ratio metrics
-- Implemented rate limiting, CSV export, and permalink sharing features
-- Designed serverless architecture with auto-scaling and global HTTPS distribution
-
-## Interview Talking Points
-
-"This is a production-grade quantitative finance application that demonstrates several key engineering practices:
-
-1. **Containerization**: Single Docker container with FastAPI backend and Jinja2 frontend
-2. **Cloud Deployment**: Google Cloud Run for serverless, auto-scaling infrastructure
-3. **Production Features**: Rate limiting, CSV export, permalink sharing
-4. **Monitoring**: Health checks and uptime monitoring for production reliability
-5. **Quantitative Finance**: Real EMA crossover strategy with realistic trading costs and volatility targeting
-6. **User Experience**: Buy-and-hold comparison, shareable results, data export
-
-The architecture scales from 0 to 10 instances based on demand, provides global HTTPS access, and costs virtually nothing when not in use - perfect for demonstrating modern cloud-native development practices."
 
 ## Technical Stack
 
