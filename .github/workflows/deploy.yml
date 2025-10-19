@@ -31,7 +31,7 @@ jobs:
         gcloud run deploy ema-sharpe \
           --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/ema-sharpe \
           --platform managed \
-          --region us-central1 \
+          --region us-west1 \
           --allow-unauthenticated \
           --port 8080 \
           --memory 1Gi \
@@ -40,6 +40,6 @@ jobs:
           
     - name: Get service URL
       run: |
-        SERVICE_URL=$(gcloud run services describe ema-sharpe --platform managed --region us-central1 --format 'value(status.url)')
+        SERVICE_URL=$(gcloud run services describe ema-sharpe --platform managed --region us-west1 --format 'value(status.url)')
         echo "Service deployed at: $SERVICE_URL"
         echo "::set-output name=service_url::$SERVICE_URL"
