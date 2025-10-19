@@ -1,7 +1,7 @@
 import base64, json, time, io, csv, traceback, datetime as dt, math, statistics, logging
 from functools import lru_cache
 from fastapi import FastAPI, Request, HTTPException, Query
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -22,6 +22,15 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], allow_methods=["*"], allow_headers=["*"]
 )
+
+@app.middleware("http")
+async def no_cache_html(request: Request, call_next):
+    resp: Response = await call_next(request)
+    # Don't cache HTML pages (others like JS/CSS can keep ETags if you want)
+    if request.url.path in ("/", "/index.html"):
+        resp.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        resp.headers["Pragma"] = "no-cache"
+    return resp
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
