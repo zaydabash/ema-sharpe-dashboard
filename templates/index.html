@@ -247,7 +247,7 @@ async function run(){
     animateNumber('k_mdd',data.metrics.MaxDrawdown,v=>fmtPct(v));
     animateNumber('k_trades',data.metrics.Trades,v=>Math.round(v).toString());
 
-    const x=data.equity_curve.map(p=>p.date), strat=data.equity_curve.map(p=>p.equity);
+    const x=data.equity_curve.map(p=>new Date(p.date)), strat=data.equity_curve.map(p=>p.equity);
     const traces=[{x,y:strat,name:`${p.ticker} Strategy`,mode:'lines',line:{width:3,color:accent}}];
 
     // Benchmarks overlay (relative)
