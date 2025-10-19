@@ -160,3 +160,4 @@ Set up monitoring with:
 
 MIT License - see LICENSE file for details.
 # Force deployment Sat Oct 18 19:46:22 PDT 2025
+# Chart fix deployed Sat Oct 18 19:49:46 PDT 2025
