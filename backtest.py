@@ -335,8 +335,8 @@ def run_backtest(
         band_dn = (df["equity"] * (1.0 - k * roll_std)).clip(lower=0).astype(float).tolist()
 
         return {
-            "metrics": {"CAGR": cagr, "Sharpe": sharpe, "MaxDrawdown": mdd,
-                        "WinRate": wins / max(1, len(df)), "Trades": trades_cnt},
+            "metrics": {"cagr": cagr, "sharpe": sharpe, "max_drawdown": mdd,
+                        "win_rate": wins / max(1, len(df)), "total_trades": trades_cnt},
             "equity_curve": equity_curve,
             "drawdown": [float(x) for x in df["drawdown"].fillna(0.0)],
             "exposure": exposure_series,

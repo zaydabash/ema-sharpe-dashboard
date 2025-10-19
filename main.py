@@ -304,8 +304,8 @@ async def add_to_leaderboard(req: Request):
             "strategy": backtest_data.strategy,
             "params": payload,
             "metrics": result["metrics"],
-            "sharpe": result["metrics"]["Sharpe"],
-            "cagr": result["metrics"]["CAGR"],
+            "sharpe": result["metrics"]["sharpe"],
+            "cagr": result["metrics"]["cagr"],
             "created_at": dt.datetime.now().isoformat()
         }
         
@@ -360,9 +360,9 @@ async def explain_detailed(req: BacktestReq):
             },
             "key_insights": [
                 f"Strategy performs {'better' if bull_sharpe > bear_sharpe else 'worse'} in bull markets",
-                f"Sharpe ratio: {result['metrics']['Sharpe']:.2f}",
-                f"Max drawdown: {result['metrics']['MaxDrawdown']:.1%}",
-                f"Win rate: {result['metrics']['WinRate']:.1%}"
+                f"Sharpe ratio: {result['metrics']['sharpe']:.2f}",
+                f"Max drawdown: {result['metrics']['max_drawdown']:.1%}",
+                f"Win rate: {result['metrics']['win_rate']:.1%}"
             ]
         }
         
@@ -608,7 +608,7 @@ async def parameter_sweep(req: ParameterSweepReq):
                             fees_bps=req.fees_bps, slip_bps=req.slip_bps,
                             vol_target=req.vol_target, target_vol=req.target_vol
                         )
-                        row.append(float(res["metrics"]["Sharpe"]))
+                        row.append(float(res["metrics"]["sharpe"]))
                     except Exception:
                         row.append(None)
                 sharpe_grid.append(row)
