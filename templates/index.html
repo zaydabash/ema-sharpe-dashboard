@@ -242,10 +242,10 @@ async function run(){
     const r=await fetch("/api/backtest",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(p)});
     if(!r.ok) throw new Error(await r.text()); const data=await r.json();
 
-    animateNumber('k_cagr',data.metrics.CAGR,v=>fmtPct(v));
-    animateNumber('k_sharpe',data.metrics.Sharpe,v=>fmt2(v));
-    animateNumber('k_mdd',data.metrics.MaxDrawdown,v=>fmtPct(v));
-    animateNumber('k_trades',data.metrics.Trades,v=>Math.round(v).toString());
+    animateNumber('k_cagr',data.metrics.cagr,v=>fmtPct(v));
+    animateNumber('k_sharpe',data.metrics.sharpe,v=>fmt2(v));
+    animateNumber('k_mdd',data.metrics.max_drawdown,v=>fmtPct(v));
+    animateNumber('k_trades',data.metrics.total_trades,v=>Math.round(v).toString());
 
     const x=data.equity_curve.map(p=>new Date(p.date)), strat=data.equity_curve.map(p=>p.equity);
     const traces=[{x,y:strat,name:`${p.ticker} Strategy`,mode:'lines',line:{width:3,color:accent}}];
