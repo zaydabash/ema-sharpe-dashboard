@@ -42,7 +42,46 @@ Thumbs.db
 *.log
 
 # Environment variables
+.env
+.env.*
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
+*.env
+
+# Secrets and credentials
+/secrets/
+/secrets/**
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.json
+service-account.json
+*.credentials
+
+# API keys and tokens (common patterns)
+*api_key*
+*API_KEY*
+*api-key*
+*password*
+*PASSWORD*
+*secret*
+*SECRET*
+*token*
+*TOKEN*
+*credential*
+*CREDENTIAL*
+
+# Test coverage
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
+.hypothesis/
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+dmypy.json

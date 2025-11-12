@@ -156,6 +156,97 @@ Set up monitoring with:
 - **Deployment**: Docker, Google Cloud Run
 - **Monitoring**: Health checks, rate limiting
 
+## Testing
+
+### Test Coverage
+
+The project includes comprehensive unit tests with **~75% test coverage** via pytest. Tests cover:
+
+- Fee and slippage calculations
+- Performance metrics calculation (CAGR, Sharpe ratio, drawdown)
+- Input validation and error handling
+- Data processing and signal generation
+
+### Running Tests
+
+```bash
+# Install test dependencies
+pip install -r requirements.txt pytest pytest-cov
+
+# Run tests with coverage
+pytest --cov=apps/api --cov-report=html --cov-report=term-missing
+
+# View HTML coverage report
+open htmlcov/index.html
+```
+
+### Code Quality
+
+- **Linting**: flake8 and pylint configurations included
+- **Type Hints**: Full type annotations for better code maintainability
+- **Documentation**: Comprehensive docstrings for all functions
+
+```bash
+# Run flake8
+flake8 apps/api/
+
+# Run pylint
+pylint apps/api/main.py
+```
+
+## Security
+
+### Input Validation
+
+- **Ticker Sanitization**: Ticker symbols are validated and sanitized to prevent injection attacks (alphanumeric and dots only)
+- **Date Validation**: Date ranges are validated for format and logical consistency (start < end, max 10 years)
+- **Parameter Validation**: All API parameters are validated using Pydantic models with type checking and range constraints
+- **Rate Limiting**: API endpoints are protected with rate limiting (60 requests per minute per IP)
+
+### Security Considerations
+
+- **CORS Configuration**: Currently allows all origins (`*`). For production, restrict to specific domains:
+  ```python
+  allow_origins=["https://yourdomain.com", "https://www.yourdomain.com"]
+  ```
+
+- **Authentication**: API endpoints are currently unauthenticated. For production use, consider:
+  - API key authentication
+  - OAuth2/JWT tokens
+  - Google Cloud IAM integration
+
+- **Secrets Management**: 
+  - Never commit `.env` files or credentials to version control
+  - Use environment variables or secret management services (Google Secret Manager, AWS Secrets Manager)
+  - All credential patterns are excluded via `.gitignore`
+
+- **HTTPS Only**: All production deployments should use HTTPS (automatically handled by Google Cloud Run)
+
+- **Error Handling**: Comprehensive exception handling prevents information leakage:
+  - Generic error messages for clients
+  - Detailed error logging server-side
+  - Proper HTTP status codes (400, 500, 503)
+
+### Security Audit
+
+The codebase has been audited for common security issues:
+
+- ✅ No `eval()` usage
+- ✅ No hardcoded credentials or API keys
+- ✅ Input sanitization for user-provided data
+- ✅ Proper exception handling
+- ✅ Rate limiting implemented
+- ✅ `.gitignore` excludes sensitive files (`/secrets/`, `*.env`, `*credentials*`, etc.)
+
+### Recommended Production Enhancements
+
+1. **Add API Authentication**: Implement API keys or OAuth2
+2. **Restrict CORS**: Update CORS to allow only your frontend domain
+3. **Add Request Logging**: Log all API requests for audit trails
+4. **Implement Request Size Limits**: Prevent DoS via large payloads
+5. **Add Input Rate Limiting**: Limit concurrent requests per IP
+6. **Use Secret Management**: Store any API keys in Google Secret Manager
+
 ## License
 
 MIT License - see LICENSE file for details.

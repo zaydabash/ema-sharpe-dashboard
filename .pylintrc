@@ -1,0 +1,39 @@
+[MASTER]
+ignore=.venv,venv,env,build,dist,*.egg-info
+jobs=0
+suggestion-mode=yes
+
+[MESSAGES CONTROL]
+disable=
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-locals,
+    too-many-branches,
+    too-many-statements,
+    import-error,
+    no-member,
+    fixme
+
+[FORMAT]
+max-line-length=100
+indent-string='    '
+
+[BASIC]
+good-names=i,j,k,df,ex,ok,id,ticker,params,app,req,resp
+
+[DESIGN]
+max-args=7
+max-locals=15
+max-returns=6
+max-branches=12
+max-statements=50
+max-parents=7
+max-attributes=10
+min-public-methods=1
+
+[SIMILARITIES]
+min-similarity-lines=4
+ignore-comments=yes
+ignore-docstrings=yes
+ignore-imports=no
+
