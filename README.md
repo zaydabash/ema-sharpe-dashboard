@@ -60,7 +60,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-Access at: http://127.0.0.1:8000
+Access at: https://ema-sharpe-380303857049.us-west1.run.app/
 
 ### Docker
 
