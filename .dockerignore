@@ -1,0 +1,20 @@
+.git
+**/__pycache__
+**/.pytest_cache
+**/.mypy_cache
+**/.turbo
+node_modules
+npm-debug.log
+yarn-error.log
+.DS_Store
+
+# Exclude frontend and legacy apps from backend image
+apps/web
+ema-sharpe-one
+static
+templates
+chart_fix_bookmarklet.js
+chart_fix_bookmarklet_permanent.js
+chart_fix_test.html
+screenshot.png
+

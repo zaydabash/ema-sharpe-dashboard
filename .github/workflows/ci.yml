@@ -1,0 +1,23 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install API dependencies
+        working-directory: apps/api
+        run: pip install -r requirements.txt
+      - name: Run API tests
+        working-directory: apps/api
+        run: python -m pytest tests/ -v
