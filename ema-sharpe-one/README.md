@@ -60,7 +60,7 @@ pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
-Access at: https://ema-sharpe-380303857049.us-west1.run.app/
+Access at: http://127.0.0.1:8000
 
 ### Docker
 
@@ -71,6 +71,15 @@ docker build -t ema-sharpe .
 # Run the container
 docker run -p 8080:8080 ema-sharpe
 ```
+
+## Google Cloud Run Deployment
+
+### Prerequisites
+
+1. Google Cloud Project with billing enabled
+2. Cloud Run API enabled
+3. Cloud Build API enabled
+4. Service account with appropriate permissions
 
 ### Manual Deployment
 
@@ -148,6 +157,28 @@ Set up monitoring with:
 - UptimeRobot
 - Pingdom
 
+## Resume Bullets
+
+Perfect for your resume:
+
+- Built and deployed a quantitative trading dashboard (FastAPI + Plotly) on Google Cloud Run
+- Containerized with Docker, added volatility targeting and Sharpe ratio metrics
+- Implemented rate limiting, CSV export, and permalink sharing features
+- Designed serverless architecture with auto-scaling and global HTTPS distribution
+
+## Interview Talking Points
+
+"This is a production-grade quantitative finance application that demonstrates several key engineering practices:
+
+1. **Containerization**: Single Docker container with FastAPI backend and Jinja2 frontend
+2. **Cloud Deployment**: Google Cloud Run for serverless, auto-scaling infrastructure
+3. **Production Features**: Rate limiting, CSV export, permalink sharing
+4. **Monitoring**: Health checks and uptime monitoring for production reliability
+5. **Quantitative Finance**: Real EMA crossover strategy with realistic trading costs and volatility targeting
+6. **User Experience**: Buy-and-hold comparison, shareable results, data export
+
+The architecture scales from 0 to 10 instances based on demand, provides global HTTPS access, and costs virtually nothing when not in use - perfect for demonstrating modern cloud-native development practices."
+
 ## Technical Stack
 
 - **Backend**: FastAPI, Python 3.11
@@ -156,73 +187,6 @@ Set up monitoring with:
 - **Deployment**: Docker, Google Cloud Run
 - **Monitoring**: Health checks, rate limiting
 
-## Testing
+## License
 
-### Test Coverage
-
-The project includes comprehensive unit tests with **~75% test coverage** via pytest. Tests cover:
-
-- Fee and slippage calculations
-- Performance metrics calculation (CAGR, Sharpe ratio, drawdown)
-- Input validation and error handling
-- Data processing and signal generation
-
-### Running Tests
-
-```bash
-# Install test dependencies
-pip install -r requirements.txt pytest pytest-cov
-
-# Run tests with coverage
-pytest --cov=apps/api --cov-report=html --cov-report=term-missing
-
-# View HTML coverage report
-open htmlcov/index.html
-```
-
-### Code Quality
-
-- **Linting**: flake8 and pylint configurations included
-- **Type Hints**: Full type annotations for better code maintainability
-- **Documentation**: Comprehensive docstrings for all functions
-
-```bash
-# Run flake8
-flake8 apps/api/
-
-# Run pylint
-pylint apps/api/main.py
-```
-
-## Security
-
-### Input Validation
-
-- **Ticker Sanitization**: Ticker symbols are validated and sanitized to prevent injection attacks (alphanumeric and dots only)
-- **Date Validation**: Date ranges are validated for format and logical consistency (start < end, max 10 years)
-- **Parameter Validation**: All API parameters are validated using Pydantic models with type checking and range constraints
-- **Rate Limiting**: API endpoints are protected with rate limiting (60 requests per minute per IP)
-
-### Security Considerations
-
-- **CORS Configuration**: Currently allows all origins (`*`). For production, restrict to specific domains:
-  ```python
-  allow_origins=["https://yourdomain.com", "https://www.yourdomain.com"]
-  ```
-
-- **Authentication**: API endpoints are currently unauthenticated. For production use, consider:
-  - API key authentication
-  - OAuth2/JWT tokens
-  - Google Cloud IAM integration
-
-- **Secrets Management**: 
-  - Never commit `.env` files or credentials to version control
-  - Use environment variables or secret management services (Google Secret Manager, AWS Secrets Manager)
-  - All credential patterns are excluded via `.gitignore`
-
-- **HTTPS Only**: All production deployments should use HTTPS (automatically handled by Google Cloud Run)
-
-- **Error Handling**: Comprehensive exception handling prevents information leakage:
-  - Generic error messages for clients
-  - Detailed error logging server-side
-  - Proper HTTP status codes (400, 500, 503)
+MIT License - see LICENSE file for details.

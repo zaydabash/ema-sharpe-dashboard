@@ -1,0 +1,509 @@
+/* EMA Sharpe — Trading Terminal Dark Theme */
+:root {
+  --bg: #0b1220;
+  --surface: #1a2332;
+  --glass: rgba(26, 35, 50, 0.8);
+  --border: #2a3441;
+  --text: #e6eef8;
+  --text-muted: #94a3b8;
+  --accent: #46c2ff;
+  --accent-glow: rgba(70, 194, 255, 0.3);
+  --success: #10b981;
+  --danger: #ff6b6b;
+  --warning: #f59e0b;
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 16px 64px rgba(0, 0, 0, 0.6);
+  
+  /* Container system */
+  --container: 960px;
+  --pad: 16px;
+  --font-scale: 0.85;
+}
+#app-root{
+  width: min(var(--container), 100%);
+  margin-inline: auto;
+  padding-inline: var(--pad);
+  font-size: calc(16px * var(--font-scale));
+}
+
+
+/* 0) predictable sizing + no horizontal scroll ever */
+* { box-sizing: border-box; }
+html, body {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  scrollbar-gutter: stable both-edges;
+  background: #0f1720;
+  color: #e6f1ff;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* 2) params pill CANNOT grow past the container */
+#params-pill, .params-pill{
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* 3) every section/panel respects the container */
+.section, .panel, .metrics, .table-wrap, .plot-wrap { max-width: 100%; }
+
+/* 4) Plotly can be a bully—lock it to 100% and hide any bleed */
+.plot-wrap{ overflow: hidden; }
+.plot-wrap .js-plotly-plot,
+.plot-wrap .plot-container,
+.plot-wrap .svg-container{
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* 5) metric cards a bit tighter to match the 20% feel */
+.metrics{ display: grid; gap: 10px; grid-template-columns: repeat(4, minmax(0,1fr)); }
+.metric .value{ font-weight: 800; font-size: 0.9rem; }
+.metric { min-height: 80px; padding: 8px; }
+
+/* ========= ORIGINAL WORKING STATE ========= */
+:root {
+  --bg: #0b1220;
+  --surface: #1a2332;
+  --surface-hover: #243447;
+  --border: #2d3748;
+  --text: #e6eef8;
+  --text-muted: #94a3b8;
+  --accent: #3b82f6;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --error: #ef4444;
+  
+  /* Container system */
+  --container: 1200px;
+  --pad: 16px;
+  --font-scale: 0.9;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: calc(16px * var(--font-scale));
+  overflow-x: auto;  /* Enable horizontal scrolling */
+}
+
+#app-root {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: var(--pad);
+  min-height: 100vh;
+  width: 1400px;  /* Force wider than viewport to show scrollbar */
+}
+.js-plotly-plot .modebar { right: 8px !important; }
+
+/* Kill any 100vw offenders (common reason for "skew right") */
+[class*="full"], [class*="bar"], [id*="params"] {
+  max-width: 100%;
+}
+
+
+
+/* 3) Kill the common culprits that exceed width */
+.js-plotly-plot, .plot-container, .svg-container {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+.js-plotly-plot .modebar { 
+  right: 8px !important; 
+}
+img, canvas, svg { 
+  max-width: 100%; 
+  height: auto; 
+  display: block; 
+}
+
+/* 4) If you have a sticky/params bar, constrain it to the container */
+#params-bar, .params-pill, .sticky-top {
+  position: sticky;
+  top: 0;
+  width: 100%;
+}
+
+/* 5) Metrics grid stays centered and doesn't create ghost columns */
+.metrics {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(3, minmax(220px,1fr));
+}
+@media (max-width: 1100px) { 
+  .metrics { 
+    grid-template-columns: repeat(2, minmax(220px,1fr)); 
+  } 
+}
+@media (max-width: 640px) { 
+  .metrics { 
+    grid-template-columns: 1fr; 
+  } 
+}
+.metric { 
+  min-height: 120px; 
+}
+
+/* AGGRESSIVE: Prevent ANY element from exceeding container width */
+* {
+  max-width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure main content never causes horizontal scroll after dynamic renders */
+.chart, .subchart, #chart_equity, #chart_dd, #chart_expo, #chart_heat, #chart_monthly, #chart_bench {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  height: 150px; /* much smaller */
+}
+.subchart {
+  height: 120px; /* much smaller */
+}
+
+/* Plotly containers should never exceed container width */
+.js-plotly-plot, .plot-container, .svg-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  display: block;
+}
+.js-plotly-plot .modebar {
+  right: 8px !important;
+}
+
+.wrap { 
+  padding: 20px 0; 
+}
+
+.grid { display: grid; gap: 20px; }
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--success));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.badge {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(10px);
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Clamp the params/permalink pill so it never overflows container */
+#params-pill, .params-pill {
+  display: block;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-inline: auto;
+}
+
+.permalink-text, .params-text, code.permalink {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.badge:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  backdrop-filter: blur(20px);
+  box-shadow: var(--shadow);
+}
+
+.panel { margin-bottom: 20px; }
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: var(--text);
+}
+
+input, select {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+input:focus, select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.btn-primary, .btn-ghost {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #3b82f6);
+  color: white;
+  box-shadow: 0 4px 16px rgba(70, 194, 255, 0.3);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(70, 194, 255, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.btn-ghost:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: var(--glass);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  backdrop-filter: blur(20px);
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.card .k {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.card .v {
+  font-size: 2rem;
+  font-weight: 800;
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+}
+
+.chart { height: 460px; margin-bottom: 20px; }
+.subchart { height: 220px; margin-bottom: 16px; }
+
+.legend {
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}
+
+.tape {
+  background: var(--surface);
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 16px;
+}
+
+.signal_tape span {
+  height: 20px;
+  border-radius: 2px;
+  transition: all 0.1s ease;
+}
+
+.signal_tape span:hover {
+  opacity: 0.8;
+  transform: scaleY(1.2);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.6rem; /* much smaller */
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.table th {
+  background: var(--surface);
+  color: var(--text);
+  padding: 6px 4px; /* smaller */
+  text-align: center;
+  font-weight: 600;
+  border-bottom: 2px solid var(--border);
+}
+
+.table td {
+  padding: 4px 3px; /* much smaller */
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.table td.pos { color: var(--success); font-weight: 600; }
+.table td.neg { color: var(--danger); font-weight: 600; }
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.half { 
+  width: 100%;
+  overflow: visible;
+}
+
+.table-wrap {
+  overflow: auto;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  width: 100%;
+}
+
+.table {
+  width: 100%;
+  min-width: 800px;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.table th, .table td {
+  padding: 8px 6px;
+  text-align: center;
+}
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px 20px;
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  display: none;
+  backdrop-filter: blur(20px);
+}
+
+.spinner {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: none;
+  z-index: 1000;
+}
+
+.spinner .dot {
+  width: 12px;
+  height: 12px;
+  background: var(--accent);
+  border-radius: 50%;
+  margin: 0 4px;
+  animation: spin 1.4s infinite ease-in-out both;
+}
+
+.spinner .dot:nth-child(1) { animation-delay: -0.32s; }
+.spinner .dot:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes spin {
+  0%, 80%, 100% { transform: scale(0); }
+  40% { transform: scale(1); }
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .wrap { padding: 12px 0; }
+  h1 { font-size: 2rem; }
+  .row { grid-template-columns: 1fr; }
+  .cards { grid-template-columns: repeat(2, 1fr); }
+  .two-col { grid-template-columns: 1fr; gap: 16px; }
+  .chart { height: 300px; }
+  .subchart { height: 150px; }
+  .table { font-size: 0.75rem; min-width: 600px; }
+  .table th, .table td { padding: 6px 4px; }
+}
+
+@media (max-width: 480px) {
+  .cards { grid-template-columns: 1fr; }
+  .card .v { font-size: 1.5rem; }
+}

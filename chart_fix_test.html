@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>EMA Sharpe Dashboard - Fixed Charts</title>
+    <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .chart { width: 100%; height: 400px; margin: 20px 0; }
+        button { padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #2563eb; }
+        .status { margin: 10px 0; padding: 10px; background: #f3f4f6; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>EMA Sharpe Dashboard - Chart Fix Test</h1>
+    
+    <div class="status" id="status">Ready to test...</div>
+    
+    <button onclick="testBacktest()">Run Backtest Test</button>
+    
+    <div id="chart_equity" class="chart"></div>
+    <div id="chart_drawdown" class="chart"></div>
+    
+    <script>
+        async function testBacktest() {
+            const status = document.getElementById('status');
+            status.textContent = 'Running backtest...';
+            
+            try {
+                const response = await fetch('https://ema-sharpe-380303857049.us-west1.run.app/api/backtest', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        ticker: 'SPY',
+                        start_date: '2023-01-01',
+                        end_date: '2023-12-31',
+                        fast_ema: 20,
+                        slow_ema: 50,
+                        initial_capital: 10000
+                    })
+                });
+                
+                if (!response.ok) throw new Error('API request failed');
+                
+                const data = await response.json();
+                status.textContent = `Backtest complete! ${data.equity_curve.length} data points received.`;
+                
+                // Fix the charts with proper date parsing
+                plotFixedCharts(data);
+                
+            } catch (error) {
+                status.textContent = 'Error: ' + error.message;
+                console.error(error);
+            }
+        }
+        
+        function plotFixedCharts(data) {
+            // Convert dates to proper Date objects
+            const equityData = data.equity_curve.map(point => ({
+                x: new Date(point.date),
+                y: point.equity
+            }));
+            
+            const drawdownData = data.equity_curve.map(point => ({
+                x: new Date(point.date),
+                y: point.equity - 1  // Simple drawdown calculation
+            }));
+            
+            // Plot equity curve
+            Plotly.newPlot('chart_equity', [{
+                x: equityData.map(p => p.x),
+                y: equityData.map(p => p.y),
+                mode: 'lines',
+                line: { width: 2, color: '#3b82f6' },
+                name: 'Strategy Equity'
+            }], {
+                title: 'Equity Curve (Fixed)',
+                xaxis: { title: 'Date', type: 'date' },
+                yaxis: { title: 'Equity Value', type: 'linear' },
+                margin: { t: 40, r: 20, b: 40, l: 60 }
+            }, { responsive: true });
+            
+            // Plot drawdown
+            Plotly.newPlot('chart_drawdown', [{
+                x: drawdownData.map(p => p.x),
+                y: drawdownData.map(p => p.y),
+                mode: 'lines',
+                line: { width: 2, color: '#ef4444' },
+                name: 'Drawdown'
+            }], {
+                title: 'Drawdown (Fixed)',
+                xaxis: { title: 'Date', type: 'date' },
+                yaxis: { title: 'Drawdown', type: 'linear' },
+                margin: { t: 40, r: 20, b: 40, l: 60 }
+            }, { responsive: true });
+            
+            console.log('Charts plotted successfully!');
+            console.log('Equity data sample:', equityData.slice(0, 5));
+        }
+    </script>
+</body>
+</html>
