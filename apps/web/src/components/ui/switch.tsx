@@ -18,19 +18,20 @@ const Switch = React.forwardRef<HTMLInputElement, SwitchProps>(
         />
         <div
           className={cn(
-            "relative rounded-full bg-gray-200 transition-colors duration-200 ease-in-out",
+            "relative rounded-full border border-border bg-secondary transition-colors duration-200 ease-in-out",
             {
               "w-8 h-4": size === "sm",
               "w-11 h-6": size === "md",
               "w-14 h-7": size === "lg",
             },
-            props.checked && "bg-primary",
+            props.checked && "border-primary bg-primary",
             className
           )}
         >
           <div
             className={cn(
-              "absolute top-0.5 left-0.5 bg-white rounded-full shadow transition-transform duration-200 ease-in-out",
+              "absolute top-0.5 left-0.5 rounded-full transition-transform duration-200 ease-in-out",
+              props.checked ? "bg-primary-foreground" : "bg-muted-foreground",
               {
                 "w-3 h-3": size === "sm",
                 "w-5 h-5": size === "md",

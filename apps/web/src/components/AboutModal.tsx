@@ -8,78 +8,103 @@ interface AboutModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="label-eyebrow mb-2">{title}</h3>
+      <div className="text-sm leading-relaxed text-muted-foreground">{children}</div>
+    </div>
+  );
+}
+
 export function AboutModal({ open, onOpenChange }: AboutModalProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-h-[82vh] max-w-2xl overflow-y-auto rounded-sm bg-card">
         <DialogHeader>
-          <DialogTitle>About EMA + Sharpe Dashboard</DialogTitle>
+          <DialogTitle className="font-mono uppercase tracking-[0.15em]">
+            About Quant Terminal
+          </DialogTitle>
           <DialogDescription>
-            Learn about the EMA crossover strategy and how this tool works
+            A backtesting workbench for five systematic strategies with realistic costs and a
+            buy-and-hold benchmark.
           </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-6 text-sm">
-          <div>
-            <h3 className="font-semibold text-base mb-2">What is EMA Crossover?</h3>
-            <p className="text-gray-600 mb-2">
-              The Exponential Moving Average (EMA) crossover strategy is a popular trend-following approach:
+
+        <div className="space-y-6 pt-2">
+          <Section title="Strategies">
+            <ul className="space-y-1.5">
+              <li>
+                <strong className="text-foreground">EMA / SMA Crossover</strong>: trend following on
+                fast/slow moving-average crosses.
+              </li>
+              <li>
+                <strong className="text-foreground">RSI Mean Reversion</strong>: buy oversold, exit
+                on overbought.
+              </li>
+              <li>
+                <strong className="text-foreground">Bollinger Breakout</strong>: enter on breaks
+                above the upper band.
+              </li>
+              <li>
+                <strong className="text-foreground">Momentum</strong>: go long when trailing return
+                clears a threshold.
+              </li>
+            </ul>
+          </Section>
+
+          <Section title="Engine">
+            <ul className="space-y-1.5">
+              <li>
+                <strong className="text-foreground">Realistic costs:</strong> configurable fees and
+                slippage on every fill.
+              </li>
+              <li>
+                <strong className="text-foreground">Volatility targeting:</strong> optional daily
+                exposure scaling (rolling 20-day vol, capped at 2x leverage).
+              </li>
+              <li>
+                <strong className="text-foreground">Benchmark:</strong> every run is compared against
+                buy-and-hold.
+              </li>
+            </ul>
+          </Section>
+
+          <Section title="Metrics">
+            <ul className="space-y-1.5">
+              <li>
+                <strong className="text-foreground">CAGR</strong>: annualized compound return.
+              </li>
+              <li>
+                <strong className="text-foreground">Sharpe</strong>: risk-adjusted return (higher is
+                better).
+              </li>
+              <li>
+                <strong className="text-foreground">Max Drawdown</strong>: largest peak-to-trough
+                decline.
+              </li>
+              <li>
+                <strong className="text-foreground">Win Rate / Volatility</strong>: share of
+                profitable trades and annualized standard deviation.
+              </li>
+            </ul>
+          </Section>
+
+          <div className="rounded-sm border border-primary/30 bg-primary/5 p-4">
+            <h3 className="label-eyebrow mb-2 text-primary">Disclaimer</h3>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              For educational purposes only. Past performance does not guarantee future results, and
+              backtests may not reflect live trading conditions. Always do your own research before
+              making investment decisions.
             </p>
-            <ul className="list-disc list-inside text-gray-600 space-y-1 ml-4">
-              <li>Go <strong>long</strong> when the fast EMA crosses above the slow EMA</li>
-              <li>Go <strong>flat</strong> when the fast EMA crosses below the slow EMA</li>
-              <li>EMAs give more weight to recent prices, making them more responsive than simple moving averages</li>
-            </ul>
           </div>
 
-          <div>
-            <h3 className="font-semibold text-base mb-2">Key Features</h3>
-            <ul className="list-disc list-inside text-gray-600 space-y-1 ml-4">
-              <li><strong>Realistic Costs:</strong> Configurable fees and slippage applied to all trades</li>
-              <li><strong>Volatility Targeting:</strong> Optional daily exposure scaling to target volatility</li>
-              <li><strong>Performance Metrics:</strong> CAGR, Sharpe ratio, max drawdown, win rate</li>
-              <li><strong>Interactive Charts:</strong> Visualize equity curve with trade markers</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-base mb-2">Understanding the Metrics</h3>
-            <ul className="list-disc list-inside text-gray-600 space-y-1 ml-4">
-              <li><strong>CAGR:</strong> Compound Annual Growth Rate - annualized return</li>
-              <li><strong>Sharpe Ratio:</strong> Risk-adjusted return (higher is better)</li>
-              <li><strong>Max Drawdown:</strong> Largest peak-to-trough decline</li>
-              <li><strong>Win Rate:</strong> Percentage of profitable trades</li>
-              <li><strong>Volatility:</strong> Annualized standard deviation of returns</li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-base mb-2">Volatility Targeting</h3>
-            <p className="text-gray-600 mb-2">
-              When enabled, the strategy scales position size daily to target a specific volatility level:
-            </p>
-            <ul className="list-disc list-inside text-gray-600 space-y-1 ml-4">
-              <li>Calculates rolling 20-day volatility</li>
-              <li>Scales exposure: target_vol / current_vol</li>
-              <li>Caps leverage at 2x for safety</li>
-              <li>Helps maintain consistent risk levels</li>
-            </ul>
-          </div>
-
-          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <h3 className="font-semibold text-base mb-2 text-yellow-800">Important Disclaimers</h3>
-            <ul className="list-disc list-inside text-yellow-700 space-y-1 ml-4">
-              <li>This tool is for <strong>educational purposes only</strong></li>
-              <li>Past performance does not guarantee future results</li>
-              <li>Backtesting results may not reflect real trading conditions</li>
-              <li>Consider transaction costs, market impact, and liquidity</li>
-              <li>Always do your own research before making investment decisions</li>
-            </ul>
-          </div>
-
-          <div className="text-center">
-            <Button onClick={() => onOpenChange(false)}>
-              Got it!
+          <div className="flex justify-end border-t border-border pt-4">
+            <Button
+              onClick={() => onOpenChange(false)}
+              className="rounded-sm font-mono text-[11px] uppercase tracking-widest"
+            >
+              Close
             </Button>
           </div>
         </div>

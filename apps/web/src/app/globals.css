@@ -2,50 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Institutional "quant terminal" theme.
+ * Single dark palette (no light/dark toggle): solid ink background, hairline
+ * borders, sharp corners, amber signal accent, semantic green/red for P&L only.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
-  }
+    --background: 220 16% 6%;
+    --foreground: 210 16% 90%;
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --card: 220 14% 8.5%;
+    --card-foreground: 210 16% 90%;
+
+    --popover: 220 16% 7%;
+    --popover-foreground: 210 16% 90%;
+
+    /* Amber signal accent (used sparingly: focus, active strategy, CTA) */
+    --primary: 38 92% 55%;
+    --primary-foreground: 30 40% 8%;
+
+    --secondary: 220 12% 14%;
+    --secondary-foreground: 210 16% 90%;
+
+    --muted: 220 12% 13%;
+    --muted-foreground: 215 12% 52%;
+
+    --accent: 220 12% 15%;
+    --accent-foreground: 210 16% 92%;
+
+    --destructive: 0 72% 52%;
+    --destructive-foreground: 210 16% 96%;
+
+    --positive: 152 52% 46%;
+    --negative: 4 76% 58%;
+
+    --border: 220 12% 16%;
+    --input: 220 12% 18%;
+    --ring: 38 92% 55%;
+
+    --radius: 0.125rem;
   }
 }
 
@@ -53,7 +49,56 @@
   * {
     @apply border-border;
   }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-feature-settings: 'tnum' 1, 'cv05' 1;
+  }
+
+  /* Tabular numbers everywhere data is shown via .font-mono */
+  .font-mono {
+    font-feature-settings: 'tnum' 1, 'zero' 1;
+  }
+
+  /* Terminal-style scrollbars */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border: 2px solid hsl(var(--background));
+    border-radius: 0;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(220 10% 26%);
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.25);
+  }
+}
+
+@layer components {
+  /* Micro uppercase labels used for section headers and metric captions */
+  .label-eyebrow {
+    @apply font-mono text-[10px] uppercase tracking-[0.18em] text-muted-foreground;
+  }
+
+  /* Faint dotted grid backdrop for the app shell */
+  .terminal-grid {
+    background-image: radial-gradient(
+      hsl(220 12% 18% / 0.6) 1px,
+      transparent 1px
+    );
+    background-size: 22px 22px;
   }
 }
