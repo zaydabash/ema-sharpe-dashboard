@@ -8,7 +8,9 @@ optional volatility targeting, and a buy-and-hold benchmark. Additional
 analytics (Monte Carlo, rolling metrics, parameter sweep, CSV export) are
 available through the API.
 
-![Multi-Strategy Quant Dashboard](screenshot.png)
+![Performance metrics and equity curve](docs/dashboard-overview.png)
+
+![Equity chart and trade blotter](docs/dashboard-blotter.png)
 
 ## Architecture
 
