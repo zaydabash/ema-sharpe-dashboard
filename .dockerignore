@@ -3,18 +3,19 @@
 **/.pytest_cache
 **/.mypy_cache
 **/.turbo
-node_modules
+**/node_modules
+**/.next
+**/out
 npm-debug.log
 yarn-error.log
 .DS_Store
 
-# Exclude frontend and legacy apps from backend image
-apps/web
+# Local-only artifacts that should never enter an image.
+.venv
+.coverage
+coverage.xml
+htmlcov
 ema-sharpe-one
-static
-templates
-chart_fix_bookmarklet.js
-chart_fix_bookmarklet_permanent.js
-chart_fix_test.html
+google-cloud-sdk
+google-cloud-cli-*.tar.gz
 screenshot.png
-

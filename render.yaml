@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: quant-terminal
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Same-origin in the combined container, so any origin is acceptable.
+      - key: ALLOWED_ORIGINS
+        value: "*"
+      # Set a value to require an X-API-Key header on non-public endpoints.
+      - key: API_KEY
+        sync: false

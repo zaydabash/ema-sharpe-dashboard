@@ -17,38 +17,42 @@ This is a `turbo` monorepo:
 ```
 ema-sharpe-dashboard/
   apps/
-    api/                  # FastAPI backend (Python 3.11)
+    api/                  # FastAPI backend (Python 3.11), also serves the UI
       main.py
       tests/
       requirements.txt
       requirements-dev.txt
-      Dockerfile
-    web/                  # Next.js frontend
+      Dockerfile          # API-only image (optional)
+    web/                  # Next.js frontend (static export)
       src/
+      next.config.js      # output: 'export'
       package.json
-      Dockerfile
   packages/
     types/                # Shared TypeScript types
   scripts/                # Local dev helpers
   .github/workflows/      # CI + deploy
-  Dockerfile              # Backend image (builds apps/api) used by deploy
+  Dockerfile              # Single-container build (frontend + API)
+  render.yaml             # Render blueprint
   package.json
   turbo.json
 ```
 
-The deployed Cloud Run service is the backend API (JSON only). The frontend is
-a separate Next.js app (deploy to Vercel or its own container).
+For deployment the whole app runs as a single service: the Next.js frontend is
+built to a static export and served by the FastAPI backend from the same origin.
+One image, one URL, no CORS to configure. See [DEPLOYMENT.md](DEPLOYMENT.md).
 
-## How it runs: two processes
+For local development the two run as separate processes with hot reload (see
+Quick Start below).
 
-This app runs as two independent servers, and both must be running:
+## How it runs
 
-- Backend API: FastAPI on port 8080
-- Frontend: Next.js on port 3000
-
-The frontend calls the API at `NEXT_PUBLIC_API_URL` (default
-`http://localhost:8080`). If the API is not up, the UI shows a `Failed to fetch`
-error when you run a backtest.
+- In production (the combined container): one server serves both the UI and the
+  API on the same origin. The frontend calls the API with a relative path, so no
+  `NEXT_PUBLIC_API_URL` is needed.
+- In local development: two servers, the API on port 8080 and the Next.js dev
+  server on port 3000. The frontend targets `http://localhost:8080`
+  automatically. If the API is not up, the UI shows a `Failed to fetch` error
+  when you run a backtest.
 
 ## Quick Start
 
@@ -71,7 +75,6 @@ cd ../..
 
 # 2. one-time frontend setup
 npm install
-echo "NEXT_PUBLIC_API_URL=http://localhost:8080" > apps/web/.env.local
 
 # 3. start API (8080) and web (3000) together
 npm run dev
@@ -119,17 +122,20 @@ npm run dev:web      # or: cd apps/web && npm run dev
   responses on disk and serves stale data as a fallback when the upstream
   provider is down.
 
-### Docker
+### Docker (full app in one container)
+
+The root `Dockerfile` builds the frontend and serves it from the API, so the
+entire app runs from a single image and URL.
 
 ```bash
-# Backend (built from repo root via the root Dockerfile)
-docker build -t ema-sharpe-api .
-docker run -p 8080:8080 ema-sharpe-api
-
-# Frontend
-docker build -t ema-sharpe-web apps/web
-docker run -p 3000:3000 -e NEXT_PUBLIC_API_URL=http://localhost:8080 ema-sharpe-web
+docker build -t quant-terminal .
+docker run --rm -p 8080:8080 quant-terminal
+# Open http://localhost:8080
 ```
+
+The container honors the `PORT` environment variable (default 8080), which is
+what most managed hosts inject. To run the API by itself, build the API-only
+image from `apps/api/Dockerfile`.
 
 ## Configuration (environment variables)
 
@@ -146,10 +152,12 @@ docker run -p 3000:3000 -e NEXT_PUBLIC_API_URL=http://localhost:8080 ema-sharpe-
   fetch failures).
 
 ### Frontend (apps/web)
-- `NEXT_PUBLIC_API_URL`: base URL of the backend API
-  (default `http://localhost:8080`).
+- `NEXT_PUBLIC_API_URL`: base URL of the backend API. Leave unset for the
+  combined deployment (the UI calls the API on the same origin). In local
+  development it defaults to `http://localhost:8080`. Set it only for a split
+  deployment where the API lives on a different origin.
 - `NEXT_PUBLIC_API_KEY`: optional. When the backend has `API_KEY` set, provide
-  the same value here so the frontend sends the `X-API-Key` header.
+  the same value here at build time so the frontend sends the `X-API-Key` header.
 
 ## Features
 
@@ -239,10 +247,21 @@ npx turbo run lint typecheck test build
 
 ## Deployment
 
-See [DEPLOYMENT.md](DEPLOYMENT.md). The backend deploys to Google Cloud Run via
-`.github/workflows/deploy.yml` (builds the root `Dockerfile`, which packages
-`apps/api`). The frontend can be deployed to Vercel or as its own container from
-`apps/web/Dockerfile`. Set `NEXT_PUBLIC_API_URL` to the API URL.
+The whole app deploys as a single container (frontend served by the API). Any
+host that builds a Dockerfile works. See [DEPLOYMENT.md](DEPLOYMENT.md) for
+step-by-step instructions for Render (a `render.yaml` blueprint is included),
+Railway, Fly.io, and Google Cloud Run.
+
+The fastest path to a live URL:
+
+```bash
+docker build -t quant-terminal .
+docker run --rm -p 8080:8080 quant-terminal   # http://localhost:8080
+```
+
+Pushing to `main` also builds the root `Dockerfile` and deploys the full app to
+Google Cloud Run via `.github/workflows/deploy.yml` (requires the `GCP_SA_KEY`
+and `GCP_PROJECT_ID` repository secrets).
 
 ## Security
 

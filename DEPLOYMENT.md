@@ -1,138 +1,156 @@
-# EMA + Sharpe Dashboard
+# Deployment
 
-## Development Setup
+The app ships as a single container: the Next.js frontend is built to a static
+export and served by the FastAPI backend from the same origin. One image, one
+URL, no separate frontend host and no CORS to configure.
 
-### Prerequisites
-- Node.js 18+
-- Python 3.11+
-- npm or yarn
+## How the single container works
 
-### Local Development
+1. A Node build stage runs `next build` with `output: 'export'`, producing a
+   static site in `apps/web/out`.
+2. The Python runtime stage installs the API dependencies, copies the API code,
+   and copies the static export into `/app/static`.
+3. At startup FastAPI mounts `/app/static` at `/`. API routes (`/backtest`,
+   `/api/*`, `/health`, `/docs`) are registered first and always take
+   precedence; every other path serves the frontend.
 
-1. **Clone and install dependencies:**
-   ```bash
-   git clone <your-repo-url>
-   cd ema-sharpe-dashboard
-   # Backend deps
-   pip install -r apps/api/requirements.txt
-   # Frontend deps (optional; Next.js)
-   npm install
-   ```
+The browser only ever talks to one origin, so `runBacktest` calls the API with a
+relative path in production. No `NEXT_PUBLIC_API_URL` is required for the
+combined deployment.
 
-2. **Start the development servers:**
-   ```bash
-   # Backend (FastAPI)
-   cd apps/api && python -m uvicorn main:app --reload --port 8080
-   
-   # Frontend (Next.js, optional)
-   cd apps/web && npm run dev
-   ```
+## Build and run locally with Docker
 
-3. **Access the application:**
-- Backend API: http://localhost:8080
-- API Docs: http://localhost:8080/docs
-- Frontend (if running): http://localhost:3000
-
-### Environment Variables
-
-Create `apps/web/.env.local` (only if using the Next.js frontend):
 ```bash
-NEXT_PUBLIC_API_URL=http://localhost:8080
+# From the repository root
+docker build -t quant-terminal .
+docker run --rm -p 8080:8080 quant-terminal
+# Open http://localhost:8080
 ```
 
-## Production Deployment
+The container honors the `PORT` environment variable (defaults to 8080), which
+is what most managed platforms inject.
 
-### Backend (Cloud Run)
+## Environment variables
 
-1. Build and push image:
-   ```bash
-   gcloud builds submit --tag gcr.io/$PROJECT_ID/ema-sharpe
-   ```
-2. Deploy:
-   ```bash
-   gcloud run deploy ema-sharpe \
-     --image gcr.io/$PROJECT_ID/ema-sharpe \
-     --platform managed \
-     --region us-west1 \
-     --allow-unauthenticated \
-     --port 8080
-   ```
+All optional. The defaults work for a public, single-container deployment.
 
-### Frontend (Vercel or Cloud Run)
+| Variable          | Default            | Purpose                                                        |
+| ----------------- | ------------------ | -------------------------------------------------------------- |
+| `PORT`            | `8080`             | Port the server binds to (set automatically by most hosts).   |
+| `ALLOWED_ORIGINS` | `*`                | Comma separated CORS origins. Same-origin, so `*` is fine.    |
+| `API_KEY`         | unset              | If set, non-public endpoints require a matching `X-API-Key`.  |
+| `DATA_CACHE_DIR`  | system temp dir    | On-disk market-data cache location.                           |
+| `DATA_CACHE_TTL`  | `3600`             | Cache freshness in seconds (`0` disables caching).            |
 
-1. Set environment variable:
-   - `NEXT_PUBLIC_API_URL=https://<your-api-url>`
-2. Deploy the Next.js app (Vercel recommended) or build a separate container from `apps/web/Dockerfile`.
+## Hosting options
+
+Any platform that builds a Dockerfile will work. Pick one.
+
+### Render (blueprint included)
+
+A `render.yaml` blueprint is committed at the repository root.
+
+1. Push this repository to GitHub.
+2. In the Render dashboard choose New > Blueprint and select the repo.
+3. Render reads `render.yaml`, builds the Dockerfile, and deploys. It injects
+   `PORT` and uses `/health` as the health check.
+4. The live URL appears when the first deploy finishes.
+
+To require an API key, set `API_KEY` on the service (the blueprint leaves it
+unset and unsynced) and provide the same value to the frontend at build time via
+`NEXT_PUBLIC_API_KEY`.
+
+### Railway
+
+1. New Project > Deploy from GitHub repo.
+2. Railway detects the Dockerfile and builds it. `PORT` is provided
+   automatically.
+3. Generate a domain under the service Settings > Networking.
+
+### Fly.io
+
+```bash
+fly launch --no-deploy   # generates fly.toml; keep the internal port at 8080
+fly deploy
+```
+
+Fly sets `PORT` to the internal port (8080), which the container already uses.
+
+### Google Cloud Run
+
+```bash
+gcloud run deploy quant-terminal \
+  --source . \
+  --region us-west1 \
+  --allow-unauthenticated \
+  --port 8080
+```
+
+Cloud Run builds the Dockerfile, injects `PORT`, and returns the service URL.
+
+## Local development (two processes)
+
+For day-to-day development you do not need Docker. Run the API and the Next.js
+dev server side by side so you get hot reload on both:
+
+```bash
+npm install
+npm run dev
+# Web: http://localhost:3000   API: http://localhost:8080
+```
+
+In development the frontend targets `http://localhost:8080` automatically. Set
+`NEXT_PUBLIC_API_URL` only if your API runs somewhere else.
 
 ## Testing
 
 ```bash
-# API tests (with coverage; enforced by pytest.ini)
+# API tests (coverage enforced by pytest.ini)
 cd apps/api
 pip install -r requirements-dev.txt
 python -m pytest
 
-# Frontend lint / typecheck / build (from repo root)
-npx turbo run lint typecheck build
+# Frontend lint / typecheck / test / build (from repo root)
+npx turbo run lint typecheck test build
 ```
 
-## Project Structure
+## Project structure
 
 ```
 ema-sharpe-dashboard/
   apps/
-    web/                  # Next.js frontend
+    web/                  # Next.js frontend (static export)
       src/
         app/              # App router
         components/       # React components
-        lib/             # Utilities and API client
+        lib/              # Utilities and API client
+      next.config.js      # output: 'export'
       package.json
-      Dockerfile
-    api/                  # FastAPI backend
-      main.py             # Application and endpoints
+    api/                  # FastAPI backend (also serves the built frontend)
+      main.py             # Application, endpoints, static mount
       tests/              # Unit tests
       requirements.txt
-      Dockerfile
+      Dockerfile          # API-only image (optional)
   packages/
     types/                # Shared TypeScript types
   scripts/                # Local dev helpers
-  .github/workflows/      # CI/CD
+  .github/workflows/      # CI
+  Dockerfile              # Single-container build (frontend + API)
+  render.yaml             # Render blueprint
   package.json            # Root workspace config
   turbo.json              # Turbo configuration
-  README.md
 ```
 
-## Key Features
-
-- **Five Strategies**: EMA Crossover, RSI Mean Reversion, SMA Crossover,
-  Bollinger Breakout, Momentum
-- **Realistic Costs**: Fees and slippage simulation
-- **Volatility Targeting**: Optional risk management
-- **Performance Metrics**: CAGR, Sharpe, Max DD, Win Rate, volatility
-- **Benchmark**: Strategy vs. buy-and-hold
-- **Interactive Charts**: Plotly equity curve with benchmark + trade markers
-- **Parameter Persistence**: Saves user preferences (local storage)
-- **Rate Limiting**: 60 req/min per IP
-- **Error Handling**: Graceful error messages with proper status codes
-
-## API Endpoints
+## API endpoints
 
 - `GET /health` - Health check
 - `GET /api/strategies` - List strategies and parameters
 - `POST /backtest`, `POST /api/backtest` - Run a backtest
 - `POST /api/monte-carlo` - Bootstrap Monte Carlo of terminal equity
-- `POST /api/rolling` - Rolling Sharpe / CAGR / drawdown
+- `POST /api/rolling` - Rolling Sharpe / return / drawdown
 - `POST /api/benchmarks` - Strategy vs. buy-and-hold summary
-- `POST /api/parameter-sweep` - Grid sweep over fast/slow parameters
+- `POST /api/parameter-sweep` - Strategy-aware Sharpe heatmap
 - `POST /api/export.csv` - Equity curve as CSV
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
 
 ## License
 
