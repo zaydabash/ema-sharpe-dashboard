@@ -27,6 +27,7 @@ import yfinance as yf
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.requests import Request
 
@@ -820,7 +821,23 @@ async def export_csv(request: BacktestRequest):
     return PlainTextResponse(content=buffer.getvalue(), media_type="text/csv")
 
 
+# ---------------------------------------------------------------------------
+# Static frontend (single-container deployment)
+# ---------------------------------------------------------------------------
+# When a built frontend is present (the Next.js static export), serve it from
+# the same origin as the API. This mount is registered last so every API route
+# above takes precedence; only unmatched paths fall through to static assets.
+# If no build exists (e.g. API-only local dev or the test suite), this is a
+# no-op and the API runs on its own.
+STATIC_DIR = os.environ.get(
+    "STATIC_DIR", os.path.join(os.path.dirname(__file__), "static")
+)
+if os.path.isdir(STATIC_DIR):
+    app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="frontend")
+
+
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    port = int(os.environ.get("PORT", "8080"))
+    uvicorn.run(app, host="0.0.0.0", port=port)

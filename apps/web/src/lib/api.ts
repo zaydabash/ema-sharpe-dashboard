@@ -1,6 +1,12 @@
 import { BacktestRequest, BacktestResponse } from '@/lib/types';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+// In production the frontend is served from the same origin as the API, so an
+// empty base means requests go to the current host. During local development
+// the two run on separate ports, so fall back to the API dev port. An explicit
+// NEXT_PUBLIC_API_URL always wins (useful for split deployments).
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === 'development' ? 'http://localhost:8080' : '');
 const API_KEY = process.env.NEXT_PUBLIC_API_KEY;
 
 /** Run a backtest against the FastAPI backend. */

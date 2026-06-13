@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080',
+  // Emit a fully static site to apps/web/out so the FastAPI backend can serve
+  // the UI from the same origin (single-container deployment). NEXT_PUBLIC_*
+  // variables are inlined automatically at build time when present.
+  output: 'export',
+  images: {
+    unoptimized: true,
   },
 }
 

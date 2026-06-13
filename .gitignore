@@ -93,6 +93,9 @@ out/
 next-env.d.ts
 *.tsbuildinfo
 
+# Built frontend copied into the API for single-container serving
+apps/api/static/
+
 # Ruff
 .ruff_cache/
 
