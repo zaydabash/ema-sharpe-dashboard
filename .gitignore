@@ -10,8 +10,6 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
 parts/
 sdist/
 var/
@@ -86,3 +84,18 @@ coverage.xml
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+# Node / Next.js / Turbo
+node_modules/
+.next/
+.turbo/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Ruff
+.ruff_cache/
+
+# Local Google Cloud SDK install + installer (not part of the repo)
+google-cloud-sdk/
+google-cloud-cli-*.tar.gz

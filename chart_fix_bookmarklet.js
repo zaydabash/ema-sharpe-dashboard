@@ -1,4 +1,0 @@
-// Bookmarklet to fix charts on live site
-// Copy this entire line and save as a bookmark, then click it on the live site
-
-javascript:(function(){function fixCharts(){let data=null;if(window.lastResponseData){data=window.lastResponseData;}else{console.log('No stored data found. Please run a backtest first.');return;}if(data&&data.equity_curve){const equityData=data.equity_curve.map(point=>({x:new Date(point.date),y:point.equity}));Plotly.newPlot('chart_equity',[{x:equityData.map(p=>p.x),y:equityData.map(p=>p.y),mode:'lines',line:{width:2,color:'#3b82f6'},name:'Strategy'}],{title:'Equity Curve',xaxis:{title:'Date',type:'date'},yaxis:{title:'Equity Value',type:'linear'},margin:{t:40,r:20,b:40,l:60}},{responsive:true});console.log('Charts fixed! Equity data points:',equityData.length);}}fixCharts();})();
