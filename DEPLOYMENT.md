@@ -67,59 +67,64 @@ NEXT_PUBLIC_API_URL=http://localhost:8080
 ## Testing
 
 ```bash
-# API tests
+# API tests (with coverage; enforced by pytest.ini)
 cd apps/api
-python -m pytest tests/ -v
+pip install -r requirements-dev.txt
+python -m pytest
 
-# Frontend tests (optional, requires Next.js deps)
-cd apps/web
-npm test
-
-# Type checking (frontend)
-npm run typecheck
+# Frontend lint / typecheck / build (from repo root)
+npx turbo run lint typecheck build
 ```
 
 ## Project Structure
 
 ```
 ema-sharpe-dashboard/
-├── apps/
-│   ├── web/                 # Next.js frontend
-│   │   ├── src/
-│   │   │   ├── app/         # App router
-│   │   │   ├── components/  # React components
-│   │   │   └── lib/        # Utilities
-│   │   ├── package.json
-│   │   └── Dockerfile
-│   └── api/                 # FastAPI backend
-│       ├── main.py          # Main application
-│       ├── tests/           # Unit tests
-│       ├── requirements.txt
-│       └── Dockerfile
-├── packages/
-│   └── types/               # Shared TypeScript types
-├── .github/workflows/       # CI/CD
-├── package.json            # Root package.json
-├── turbo.json              # Turbo configuration
-└── README.md
+  apps/
+    web/                  # Next.js frontend
+      src/
+        app/              # App router
+        components/       # React components
+        lib/             # Utilities and API client
+      package.json
+      Dockerfile
+    api/                  # FastAPI backend
+      main.py             # Application and endpoints
+      tests/              # Unit tests
+      requirements.txt
+      Dockerfile
+  packages/
+    types/                # Shared TypeScript types
+  scripts/                # Local dev helpers
+  .github/workflows/      # CI/CD
+  package.json            # Root workspace config
+  turbo.json              # Turbo configuration
+  README.md
 ```
 
 ## Key Features
 
-- **EMA Crossover Strategy**: Fast/slow EMA signals
+- **Five Strategies**: EMA Crossover, RSI Mean Reversion, SMA Crossover,
+  Bollinger Breakout, Momentum
 - **Realistic Costs**: Fees and slippage simulation
 - **Volatility Targeting**: Optional risk management
-- **Performance Metrics**: CAGR, Sharpe, Max DD, Win Rate
-- **Interactive Charts**: Plotly visualization
-- **Responsive Design**: Mobile-friendly UI
-- **Parameter Persistence**: Saves user preferences
-- **Rate Limiting**: API protection
-- **Error Handling**: Graceful error messages
+- **Performance Metrics**: CAGR, Sharpe, Max DD, Win Rate, volatility
+- **Benchmark**: Strategy vs. buy-and-hold
+- **Interactive Charts**: Plotly equity curve with benchmark + trade markers
+- **Parameter Persistence**: Saves user preferences (local storage)
+- **Rate Limiting**: 60 req/min per IP
+- **Error Handling**: Graceful error messages with proper status codes
 
 ## API Endpoints
 
 - `GET /health` - Health check
-- `POST /backtest` - Run backtest
+- `GET /api/strategies` - List strategies and parameters
+- `POST /backtest`, `POST /api/backtest` - Run a backtest
+- `POST /api/monte-carlo` - Bootstrap Monte Carlo of terminal equity
+- `POST /api/rolling` - Rolling Sharpe / CAGR / drawdown
+- `POST /api/benchmarks` - Strategy vs. buy-and-hold summary
+- `POST /api/parameter-sweep` - Grid sweep over fast/slow parameters
+- `POST /api/export.csv` - Equity curve as CSV
 
 ## Contributing
 

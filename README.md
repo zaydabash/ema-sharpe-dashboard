@@ -1,228 +1,263 @@
 # Multi-Strategy Quantitative Trading Dashboard
 
-A production-ready quantitative trading dashboard featuring multiple strategies (EMA Crossover, RSI Mean Reversion, SMA Crossover, Bollinger Breakout, Momentum) with comprehensive analytics including Sharpe ratio analysis, drawdown metrics, Monte Carlo simulation, and live market data integration.
+A quantitative backtesting dashboard with a FastAPI backend and a Next.js
+frontend. It supports five trading strategies (EMA Crossover, RSI Mean
+Reversion, SMA Crossover, Bollinger Breakout, Momentum) with performance
+analytics (CAGR, Sharpe, max drawdown, win rate), realistic fees/slippage,
+optional volatility targeting, and a buy-and-hold benchmark. Additional
+analytics (Monte Carlo, rolling metrics, parameter sweep, CSV export) are
+available through the API.
 
 ![Multi-Strategy Quant Dashboard](screenshot.png)
 
-*Screenshot showing the EMA Crossover strategy backtest results for SPY (2018-2025) with performance metrics, equity curve, and drawdown analysis.*
+## Architecture
 
-**Live Demo:** https://ema-sharpe-380303857049.us-west1.run.app/
+This is a `turbo` monorepo:
 
-## Features
+```
+ema-sharpe-dashboard/
+  apps/
+    api/                  # FastAPI backend (Python 3.11)
+      main.py
+      tests/
+      requirements.txt
+      requirements-dev.txt
+      Dockerfile
+    web/                  # Next.js frontend
+      src/
+      package.json
+      Dockerfile
+  packages/
+    types/                # Shared TypeScript types
+  scripts/                # Local dev helpers
+  .github/workflows/      # CI + deploy
+  Dockerfile              # Backend image (builds apps/api) used by deploy
+  package.json
+  turbo.json
+```
 
-### Multiple Trading Strategies
-- **EMA Crossover**: Fast/slow EMA signals with realistic trade execution
-- **RSI Mean Reversion**: Oversold/overbought signals with configurable thresholds
-- **SMA Crossover**: Simple moving average crossover strategy
-- **Bollinger Breakout**: Volatility-based breakout signals
-- **Momentum**: Trend-following momentum strategy
+The deployed Cloud Run service is the backend API (JSON only). The frontend is
+a separate Next.js app (deploy to Vercel or its own container).
 
-### Advanced Analytics
-- **Performance Metrics**: CAGR, Sharpe ratio, Max Drawdown, Win Rate
-- **Monte Carlo Simulation**: Bootstrap analysis for risk assessment
-- **Rolling Metrics**: Time-series analysis of Sharpe, CAGR, and drawdown
-- **Benchmark Comparison**: Strategy vs buy-and-hold performance
-- **Trade Analysis**: Per-trade PnL with entry/exit details
+## How it runs: two processes
 
-### Interactive Visualizations
-- **Equity Curves**: Real-time strategy performance with benchmark overlay
-- **Drawdown Analysis**: Maximum drawdown visualization
-- **Exposure Charts**: Daily leverage and volatility targeting
-- **Signal Tape**: Buy/sell signals with PnL tooltips
-- **Sharpe Heatmap**: Parameter sweep analysis
-- **Monthly Returns**: Strategy vs buy-and-hold comparison tables
+This app runs as two independent servers, and both must be running:
 
-### Production Features
-- **Live Data Integration**: Real-time market data via yfinance
-- **Rate Limiting**: API protection (60 req/min per IP)
-- **CSV Export**: Download equity curves and trade data
-- **Permalinks**: Shareable URLs with encoded parameters
-- **Strategy Leaderboard**: Track top-performing configurations
-- **Live Tracking**: Subscribe to strategy performance updates
+- Backend API: FastAPI on port 8080
+- Frontend: Next.js on port 3000
+
+The frontend calls the API at `NEXT_PUBLIC_API_URL` (default
+`http://localhost:8080`). If the API is not up, the UI shows a `Failed to fetch`
+error when you run a backtest.
 
 ## Quick Start
 
-### Local Development
+### Prerequisites
+- Python 3.11+
+- Node.js 18+
+
+### Option A: one command (recommended)
+
+This starts both servers together. Create the Python virtualenv once, then use
+the root `dev` script.
 
 ```bash
-# Clone the repository
-git clone <your-repo-url>
-cd ema-sharpe-one
-
-# Create virtual environment
+# 1. one-time backend setup
+cd apps/api
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
+source .venv/bin/activate            # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
+cd ../..
 
-# Run locally
-uvicorn main:app --reload
+# 2. one-time frontend setup
+npm install
+echo "NEXT_PUBLIC_API_URL=http://localhost:8080" > apps/web/.env.local
+
+# 3. start API (8080) and web (3000) together
+npm run dev
 ```
 
-Access at: https://ema-sharpe-380303857049.us-west1.run.app/
+The `dev` script uses `concurrently` to run both processes with labeled,
+color-coded output (`api` and `web`). The API launcher
+(`scripts/dev-api.sh`) prefers `apps/api/.venv` and falls back to system
+`python3`. Override the API port with `API_PORT=9000 npm run dev`.
+
+To run a single side: `npm run dev:api` or `npm run dev:web`.
+
+### Option B: two terminals
+
+Terminal 1 (backend):
+
+```bash
+cd apps/api
+source .venv/bin/activate
+python -m uvicorn main:app --reload --port 8080
+```
+
+Terminal 2 (frontend):
+
+```bash
+npm run dev:web      # or: cd apps/web && npm run dev
+```
+
+- Frontend: http://localhost:3000
+- API base: http://localhost:8080
+- Interactive docs: http://localhost:8080/docs
+- Sanity check: `curl http://localhost:8080/health` returns
+  `{"status":"healthy",...}`
+
+### Troubleshooting
+
+- `Failed to fetch` when running a backtest: the backend is not running or is on
+  a different port. Start the API and confirm `/health` responds, and that
+  `NEXT_PUBLIC_API_URL` matches the API's port.
+- `Data unavailable for <ticker>`: live market data comes from `yfinance`, which
+  depends on Yahoo's (unofficial) endpoints and can break when they change. Make
+  sure you are on the pinned version (`pip install -r requirements.txt`), then
+  upgrade if needed (`pip install -U yfinance`) and retry with a broader date
+  range or a liquid ticker (for example `SPY`). The API also caches successful
+  responses on disk and serves stale data as a fallback when the upstream
+  provider is down.
 
 ### Docker
 
 ```bash
-# Build the container
-docker build -t ema-sharpe .
+# Backend (built from repo root via the root Dockerfile)
+docker build -t ema-sharpe-api .
+docker run -p 8080:8080 ema-sharpe-api
 
-# Run the container
-docker run -p 8080:8080 ema-sharpe
+# Frontend
+docker build -t ema-sharpe-web apps/web
+docker run -p 3000:3000 -e NEXT_PUBLIC_API_URL=http://localhost:8080 ema-sharpe-web
 ```
 
-### Manual Deployment
+## Configuration (environment variables)
 
-```bash
-# Set your project ID
-export PROJECT_ID=your-project-id
-export REGION=us-central1
+### Backend (apps/api)
+- `ALLOWED_ORIGINS`: comma-separated CORS origins, or `*` to allow any.
+  Default `*` for local development. Set to your domain(s) in production.
+- `API_KEY`: optional shared secret. When set, every endpoint except the public
+  paths (`/health`, `/docs`, `/redoc`, `/openapi.json`) requires a matching
+  `X-API-Key` header.
+- `DATA_CACHE_DIR`: directory for the on-disk market-data cache. Defaults to a
+  temp directory.
+- `DATA_CACHE_TTL`: cache freshness in seconds (default `3600`). Set `0` to
+  disable using the cache as a fresh source (stale fallback still applies on
+  fetch failures).
 
-# Authenticate and configure
-gcloud auth login
-gcloud config set project "$PROJECT_ID"
-gcloud config set run/region "$REGION"
+### Frontend (apps/web)
+- `NEXT_PUBLIC_API_URL`: base URL of the backend API
+  (default `http://localhost:8080`).
+- `NEXT_PUBLIC_API_KEY`: optional. When the backend has `API_KEY` set, provide
+  the same value here so the frontend sends the `X-API-Key` header.
 
-# Enable required services
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
+## Features
 
-# Build and push image
-gcloud builds submit --tag gcr.io/$PROJECT_ID/ema-sharpe
+### Trading strategies (backend)
+- EMA Crossover: long when the fast EMA is above the slow EMA
+- RSI Mean Reversion: long on oversold, flat on overbought (configurable)
+- SMA Crossover: simple moving-average crossover
+- Bollinger Breakout: volatility-based breakout signals
+- Momentum: trend-following lookback momentum
 
-# Deploy to Cloud Run
-gcloud run deploy ema-sharpe \
-  --image gcr.io/$PROJECT_ID/ema-sharpe \
-  --platform managed \
-  --allow-unauthenticated \
-  --port 8080 \
-  --memory 1Gi \
-  --cpu 1 \
-  --max-instances 10
-```
+### Analytics
+- Performance metrics: CAGR, Sharpe, max drawdown, win rate, volatility,
+  average trade return, total trades
+- Benchmark comparison: strategy vs. buy-and-hold equity curve
+- Realistic costs: configurable fees and slippage
+- Volatility targeting: optional position sizing toward a target vol
+- Monte Carlo (`/api/monte-carlo`): bootstrap of terminal equity
+- Rolling metrics (`/api/rolling`): rolling Sharpe / CAGR / drawdown
+- Parameter sweep (`/api/parameter-sweep`): strategy-aware grid over the two
+  primary parameters of the selected strategy, returning a Sharpe heatmap
+- CSV export (`/api/export.csv`): equity curve as CSV
 
-### Custom Domain (Optional)
+### Frontend (Next.js)
+A dark, institutional "quant terminal" interface (IBM Plex Sans/Mono, amber
+signal accent, semantic green/red for P&L):
+- Sticky control rail with a strategy selector and parameter inputs specific to
+  each strategy
+- Dense metric board (CAGR, Sharpe, max drawdown, win rate, total trades,
+  average trade return, volatility) with tabular figures
+- Interactive equity curve (Plotly) with buy-and-hold overlay and trade markers
+- Trade blotter table
+- Parameter persistence via local storage
 
-```bash
-# Set your custom domain
-export CUSTOM_DOMAIN=ema-sharpe.yourname.dev
-
-# Create domain mapping
-gcloud run domain-mappings create \
-  --service=ema-sharpe \
-  --domain="$CUSTOM_DOMAIN"
-```
-
-The command will return DNS records to configure. After DNS propagation, TLS certificate is automatic.
+### Production features
+- Live data via `yfinance` with on-disk caching and stale fallback
+- Rate limiting: 60 requests/min per IP (in-memory, fixed window)
+- Input validation: Pydantic models, ticker sanitization, date-range checks
+- Configurable CORS and optional API-key authentication
 
 ## API Endpoints
 
-- `GET /` - Main dashboard interface
-- `GET /health` - Health check endpoint
-- `POST /api/backtest` - JSON API for backtesting
-- `POST /api/export.csv` - CSV export endpoint
-
-## Performance Characteristics
-
-- **Cold Start**: ~2-3 seconds
-- **Warm Requests**: ~200-500ms
-- **Memory Usage**: ~200-400MB
-- **Auto-scaling**: 0-10 instances based on demand
-- **Rate Limiting**: 60 requests per minute per IP
-
-## Monitoring
-
-### Health Checks
-
-The `/health` endpoint returns:
-```json
-{
-  "ok": true
-}
-```
-
-### Uptime Monitoring
-
-Set up monitoring with:
-- Google Cloud Monitoring
-- UptimeRobot
-- Pingdom
-
-## Technical Stack
-
-- **Backend**: FastAPI, Python 3.11
-- **Frontend**: Jinja2 templates, Plotly.js
-- **Data**: pandas, numpy, yfinance
-- **Deployment**: Docker, Google Cloud Run
-- **Monitoring**: Health checks, rate limiting
+- `GET /health`: health check (`{"status": "healthy", "timestamp": "..."}`)
+- `GET /api/strategies`: list available strategies and their parameters
+- `POST /backtest` and `POST /api/backtest`: run a backtest
+- `POST /api/monte-carlo`: bootstrap Monte Carlo of terminal equity
+- `POST /api/rolling`: rolling Sharpe / CAGR / drawdown
+- `POST /api/benchmarks`: strategy vs. buy-and-hold summary
+- `POST /api/parameter-sweep`: strategy-aware parameter sweep (Sharpe heatmap)
+- `POST /api/export.csv`: equity curve as CSV
 
 ## Testing
 
-### Test Coverage
+### Backend (pytest)
 
-The project includes comprehensive unit tests with **~75% test coverage** via pytest. Tests cover:
-
-- Fee and slippage calculations
-- Performance metrics calculation (CAGR, Sharpe ratio, drawdown)
-- Input validation and error handling
-- Data processing and signal generation
-
-### Running Tests
+API tests run with pytest and enforce a coverage floor (80% minimum gate
+configured in `pytest.ini`).
 
 ```bash
-# Install test dependencies
-pip install -r requirements.txt pytest pytest-cov
-
-# Run tests with coverage
-pytest --cov=apps/api --cov-report=html --cov-report=term-missing
-
-# View HTML coverage report
-open htmlcov/index.html
+cd apps/api
+source .venv/bin/activate
+pip install -r requirements-dev.txt
+python -m pytest                      # coverage + term/html/xml reports
+open htmlcov/index.html               # view HTML coverage report
 ```
 
-### Code Quality
+### Frontend (Vitest)
 
-- **Linting**: flake8 and pylint configurations included
-- **Type Hints**: Full type annotations for better code maintainability
-- **Documentation**: Comprehensive docstrings for all functions
+Component and library tests run with Vitest and Testing Library.
 
 ```bash
-# Run flake8
-flake8 apps/api/
-
-# Run pylint
-pylint apps/api/main.py
+# from the repo root
+npm run test --workspace web          # single run
+npm run test:watch --workspace web    # watch mode
 ```
+
+### All checks
+
+```bash
+# from the repo root
+npx turbo run lint typecheck test build
+```
+
+### Code quality
+- Linting: `next lint` for the web app
+- Type safety: full type hints on the API; strict TypeScript on the web
+- Docstrings: documented functions across the API
+
+## Deployment
+
+See [DEPLOYMENT.md](DEPLOYMENT.md). The backend deploys to Google Cloud Run via
+`.github/workflows/deploy.yml` (builds the root `Dockerfile`, which packages
+`apps/api`). The frontend can be deployed to Vercel or as its own container from
+`apps/web/Dockerfile`. Set `NEXT_PUBLIC_API_URL` to the API URL.
 
 ## Security
 
-### Input Validation
+- Input validation: tickers restricted to alphanumeric + dots; date ranges
+  validated; all parameters validated via Pydantic.
+- Rate limiting: 60 requests/min per IP.
+- CORS: configurable via `ALLOWED_ORIGINS`. Defaults to `*` for local
+  development; restrict to your domain(s) in production.
+- Authentication: optional shared-secret API key via `API_KEY` (sent as the
+  `X-API-Key` header). Add OAuth2 / IAM for stronger production needs.
+- Secrets: never commit `.env` or credentials; credential patterns are excluded
+  via `.gitignore`.
+- Error handling: generic client errors, detailed server-side logging, and
+  appropriate status codes (400 / 429 / 500 / 503).
 
-- **Ticker Sanitization**: Ticker symbols are validated and sanitized to prevent injection attacks (alphanumeric and dots only)
-- **Date Validation**: Date ranges are validated for format and logical consistency (start < end, max 10 years)
-- **Parameter Validation**: All API parameters are validated using Pydantic models with type checking and range constraints
-- **Rate Limiting**: API endpoints are protected with rate limiting (60 requests per minute per IP)
+## License
 
-### Security Considerations
-
-- **CORS Configuration**: Currently allows all origins (`*`). For production, restrict to specific domains:
-  ```python
-  allow_origins=["https://yourdomain.com", "https://www.yourdomain.com"]
-  ```
-
-- **Authentication**: API endpoints are currently unauthenticated. For production use, consider:
-  - API key authentication
-  - OAuth2/JWT tokens
-  - Google Cloud IAM integration
-
-- **Secrets Management**: 
-  - Never commit `.env` files or credentials to version control
-  - Use environment variables or secret management services (Google Secret Manager, AWS Secrets Manager)
-  - All credential patterns are excluded via `.gitignore`
-
-- **HTTPS Only**: All production deployments should use HTTPS (automatically handled by Google Cloud Run)
-
-- **Error Handling**: Comprehensive exception handling prevents information leakage:
-  - Generic error messages for clients
-  - Detailed error logging server-side
-  - Proper HTTP status codes (400, 500, 503)
+MIT

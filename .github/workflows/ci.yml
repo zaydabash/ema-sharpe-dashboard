@@ -17,7 +17,20 @@ jobs:
           python-version: '3.11'
       - name: Install API dependencies
         working-directory: apps/api
-        run: pip install -r requirements.txt
-      - name: Run API tests
+        run: pip install -r requirements-dev.txt
+      - name: Run API tests with coverage
         working-directory: apps/api
-        run: python -m pytest tests/ -v
+        run: python -m pytest
+
+  test-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: npm install
+      - name: Lint, typecheck, test, and build
+        run: npx turbo run lint typecheck test build

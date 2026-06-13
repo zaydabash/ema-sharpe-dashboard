@@ -7,7 +7,9 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "concurrently -k -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:web": "npm run dev --workspace web",
+    "dev:api": "bash scripts/dev-api.sh",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
@@ -15,6 +17,7 @@
     "clean": "turbo run clean"
   },
   "devDependencies": {
+    "concurrently": "^9.1.2",
     "turbo": "^1.10.12"
   }
 }
